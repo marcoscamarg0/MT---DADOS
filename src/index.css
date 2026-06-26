@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gov-green-dark: #071D41;
+  --color-gov-green: #1351B4;
+  --color-gov-green-light: #2670E8;
+  --color-gov-blue: #1351B4;
+  --color-gov-blue-light: #2670E8;
+  --color-gov-yellow: #FFCD07;
+  --color-gov-gray-100: #F8F8F8;
+  --color-gov-gray-200: #EDEDED;
+  --color-gov-gray-300: #CCCCCC;
+  --color-gov-gray-600: #555555;
+  --color-gov-gray-700: #333333;
+  --color-gov-white: #FFFFFF;
+  --color-gov-surface: #F0F2F5;
+  --color-gov-card: #FFFFFF;
+  --color-gov-accent: #168821;
+  --color-gov-red: #E52207;
+  --font-family-inter: 'Inter', 'Rawline', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+html, body {
+  font-family: var(--font-family-inter);
+  background-color: var(--color-gov-surface);
+  color: var(--color-gov-gray-700);
+}
