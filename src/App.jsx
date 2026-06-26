@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
+<<<<<<< HEAD
 import { Search, Users, Building2, Mail, Phone, MapPin, Edit3, X, CheckCircle, Menu, UserCheck, Hash, HelpCircle, Code, Database, Cpu, Layers } from 'lucide-react'
 import './index.css'
 import OrgChart from './OrgChart.jsx'
+=======
+import { Search, Users, Building2, Mail, Phone, MapPin, Edit3, X, CheckCircle, Menu, UserCheck, Hash } from 'lucide-react'
+import './index.css'
+>>>>>>> origin/main
 
 const API = 'http://localhost:3001/api'
 
@@ -71,6 +76,7 @@ function Sidebar({ departments, selectedDept, onSelectDept, mobileOpen, onCloseM
 
         <div className="sidebar-subtitle">Departamentos</div>
 
+<<<<<<< HEAD
         <div className="sidebar-departments-list">
           <div
             className={`sidebar-item ${selectedDept === 'Todos' ? 'active' : ''}`}
@@ -93,6 +99,28 @@ function Sidebar({ departments, selectedDept, onSelectDept, mobileOpen, onCloseM
             </div>
           ))}
         </div>
+=======
+        <div
+          className={`sidebar-item ${selectedDept === 'Todos' ? 'active' : ''}`}
+          onClick={() => { onSelectDept('Todos'); onCloseMobile(); }}
+        >
+          <span className="sidebar-item-name">📋 Todos</span>
+          <span className="sidebar-item-count">
+            {departments.reduce((sum, d) => sum + d.total, 0)}
+          </span>
+        </div>
+
+        {departments.map(dept => (
+          <div
+            key={dept.nome}
+            className={`sidebar-item ${selectedDept === dept.nome ? 'active' : ''}`}
+            onClick={() => { onSelectDept(dept.nome); onCloseMobile(); }}
+          >
+            <span className="sidebar-item-name">{dept.nome}</span>
+            <span className="sidebar-item-count">{dept.total}</span>
+          </div>
+        ))}
+>>>>>>> origin/main
       </aside>
     </>
   )
@@ -238,6 +266,7 @@ function EditModal({ contact, onClose, onSave }) {
   )
 }
 
+<<<<<<< HEAD
 // =================== ABOUT SECTION COMPONENT ===================
 function AboutSection() {
   return (
@@ -347,6 +376,10 @@ function AboutSection() {
 // =================== MAIN APP ===================
 function App() {
   const [activeTab, setActiveTab] = useState('contacts')
+=======
+// =================== MAIN APP ===================
+function App() {
+>>>>>>> origin/main
   const [contacts, setContacts] = useState([])
   const [departments, setDepartments] = useState([])
   const [stats, setStats] = useState({})
@@ -416,6 +449,7 @@ function App() {
 
   return (
     <div className="app-layout">
+<<<<<<< HEAD
       {activeTab === 'contacts' && (
         <Sidebar
           departments={departments}
@@ -425,10 +459,20 @@ function App() {
           onCloseMobile={() => setMobileOpen(false)}
         />
       )}
+=======
+      <Sidebar
+        departments={departments}
+        selectedDept={selectedDept}
+        onSelectDept={setSelectedDept}
+        mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
+      />
+>>>>>>> origin/main
 
       <main className="main-content">
         <div className="top-bar">
           <div className="top-bar-title">
+<<<<<<< HEAD
             {activeTab === 'contacts' && (
               <button className="mobile-menu-btn" onClick={() => setMobileOpen(true)}>
                 <Menu size={18} />
@@ -539,6 +583,72 @@ function App() {
 
         {activeTab === 'about' && (
           <AboutSection />
+=======
+            <button className="mobile-menu-btn" onClick={() => setMobileOpen(true)}>
+              <Menu size={18} />
+            </button>
+            <div>
+              <h2>{deptTitle}</h2>
+              <div className="top-bar-subtitle">Sistema de Contatos — Ministério dos Transportes</div>
+            </div>
+          </div>
+        </div>
+
+        <Stats stats={stats} />
+
+        <div className="filter-bar">
+          <div className="search-wrapper">
+            <Search />
+            <input
+              className="search-input"
+              placeholder="Buscar por nome, cargo, email, telefone..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              id="search-contacts"
+            />
+          </div>
+          <select
+            className="filter-select"
+            value={selectedDept}
+            onChange={e => setSelectedDept(e.target.value)}
+            id="filter-department"
+          >
+            <option value="Todos">Todos os Departamentos</option>
+            {departments.map(d => (
+              <option key={d.nome} value={d.nome}>{d.nome} ({d.total})</option>
+            ))}
+          </select>
+        </div>
+
+        {!loading && (
+          <div className="results-count">
+            <Hash size={14} />
+            {contacts.length} contato{contacts.length !== 1 ? 's' : ''} encontrado{contacts.length !== 1 ? 's' : ''}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="loading">
+            <div className="loading-spinner" />
+            <div className="loading-text">Carregando contatos...</div>
+          </div>
+        ) : contacts.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon"><UserCheck /></div>
+            <h3>Nenhum contato encontrado</h3>
+            <p>Tente ajustar os filtros ou a busca para encontrar o que procura.</p>
+          </div>
+        ) : (
+          <div className="contacts-grid">
+            {contacts.map(contact => (
+              <ContactCard
+                key={contact.id}
+                contact={contact}
+                onEdit={setEditingContact}
+              />
+            ))}
+          </div>
+>>>>>>> origin/main
         )}
       </main>
 

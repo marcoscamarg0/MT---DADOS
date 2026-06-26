@@ -26,6 +26,7 @@ html, body {
   font-family: var(--font-family-inter);
   background-color: var(--color-gov-surface);
   color: var(--color-gov-gray-700);
+<<<<<<< HEAD
   margin: 0;
   padding: 0;
   height: 100%;
@@ -988,4 +989,6 @@ html, body {
     padding: 0 1.5rem 1.5rem;
     gap: 1rem;
   }
+=======
+>>>>>>> origin/main
 }
