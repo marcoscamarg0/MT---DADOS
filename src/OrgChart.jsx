@@ -16,35 +16,35 @@ const ORG_TREE = {
       id: 'SE', sigla: 'SE', nome: 'Secretaria Executiva', tipo: 'secretaria',
       deptKey: 'Secretaria Executiva - SE',
       filhos: [
-        { id: 'SUST',   sigla: 'SUST',   nome: 'Subsecretaria de Sustentabilidade',                          tipo: 'subsecretaria', deptKey: 'Subsecretaria de Sustentabilidade - SUST',         filhos: [] },
-        { id: 'SPAR',   sigla: 'SPAR',   nome: 'Subsecretaria de Parcerias',                                 tipo: 'subsecretaria', deptKey: 'Subsecretaria de Parcerias - SPAR',               filhos: [] },
-        { id: 'SFPLAN', sigla: 'SFPLAN', nome: 'Subsecretaria de Fomento e Planejamento',                    tipo: 'subsecretaria', deptKey: 'Subsecretaria de Fomento e Planejamento - SFPLAN', filhos: [] },
-        { id: 'SPOA',   sigla: 'SPOA',   nome: 'Subsecretaria de Planejamento, Orçamento e Administração',   tipo: 'subsecretaria', deptKey: 'SPOA - Planejamento, Orçamento e Administração',   filhos: [] },
-        { id: 'SGETI',  sigla: 'SGETI',  nome: 'Subsecretaria de Gestão Estratégica, Tecnologia e Inovação', tipo: 'subsecretaria', deptKey: 'SGETI - Gestão Estratégica, Tecnologia e Inovação', filhos: [] },
-        { id: 'CONJUR', sigla: 'CONJUR', nome: 'Consultoria Jurídica',                                       tipo: 'consultoria',   deptKey: 'Consultoria Jurídica - CONJUR',                   filhos: [] },
-        { id: 'OUV',    sigla: 'OUV',    nome: 'Ouvidoria',                                                  tipo: 'consultoria',   deptKey: 'Ouvidoria',                                      filhos: [] },
-        { id: 'CORREG', sigla: 'CORREG', nome: 'Corregedoria',                                               tipo: 'consultoria',   deptKey: 'Corregedoria',                                   filhos: [] },
+        { id: 'SUST', sigla: 'SUST', nome: 'Subsecretaria de Sustentabilidade', tipo: 'subsecretaria', deptKey: 'Subsecretaria de Sustentabilidade - SUST', filhos: [] },
+        { id: 'SPAR', sigla: 'SPAR', nome: 'Subsecretaria de Parcerias', tipo: 'subsecretaria', deptKey: 'Subsecretaria de Parcerias - SPAR', filhos: [] },
+        { id: 'SFPLAN', sigla: 'SFPLAN', nome: 'Subsecretaria de Fomento e Planejamento', tipo: 'subsecretaria', deptKey: 'Subsecretaria de Fomento e Planejamento - SFPLAN', filhos: [] },
+        { id: 'SPOA', sigla: 'SPOA', nome: 'Subsecretaria de Planejamento, Orçamento e Administração', tipo: 'subsecretaria', deptKey: 'SPOA - Planejamento, Orçamento e Administração', filhos: [] },
+        { id: 'SGETI', sigla: 'SGETI', nome: 'Subsecretaria de Gestão Estratégica, Tecnologia e Inovação', tipo: 'subsecretaria', deptKey: 'SGETI - Gestão Estratégica, Tecnologia e Inovação', filhos: [] },
+        { id: 'CONJUR', sigla: 'CONJUR', nome: 'Consultoria Jurídica', tipo: 'consultoria', deptKey: 'Consultoria Jurídica - CONJUR', filhos: [] },
+        { id: 'OUV', sigla: 'OUV', nome: 'Ouvidoria', tipo: 'consultoria', deptKey: 'Ouvidoria', filhos: [] },
+        { id: 'CORREG', sigla: 'CORREG', nome: 'Corregedoria', tipo: 'consultoria', deptKey: 'Corregedoria', filhos: [] },
       ]
     },
     {
       id: 'GM', sigla: 'GM', nome: 'Gabinete Ministerial', tipo: 'gabinete',
       deptKey: 'Gabinete do Ministro - GM',
       filhos: [
-        { id: 'CCGM',   sigla: 'CCGM',   nome: 'Coordenação-Geral do Gabinete do Ministro',                  tipo: 'coordenacao', deptKey: 'Gabinete do Ministro - GM',                                    filhos: [] },
-        { id: 'CERIM',  sigla: 'CERIM',  nome: 'Assessoria de Cerimonial',                                   tipo: 'assessoria',  deptKey: 'Gabinete do Ministro - GM',                                    filhos: [] },
-        { id: 'ASSAD',  sigla: 'ASSAD',  nome: 'Assessoria Administrativa',                                  tipo: 'assessoria',  deptKey: 'Gabinete do Ministro - GM',                                    filhos: [] },
-        { id: 'AEAPF',  sigla: 'AEAPF',  nome: 'Assessoria Especial de Assuntos Parlamentares e Federativos', tipo: 'assessoria',  deptKey: 'Assessoria Especial de Assuntos Parlamentares e Federativos', filhos: [] },
-        { id: 'AESCOM', sigla: 'AESCOM', nome: 'Assessoria Especial de Comunicação Social',                  tipo: 'assessoria',  deptKey: 'Assessoria Especial de Comunicação Social - AESCOM',           filhos: [] },
-        { id: 'AECI',   sigla: 'AECI',   nome: 'Assessoria Especial de Controle Interno',                    tipo: 'assessoria',  deptKey: 'Assessoria Especial de Controle Interno',                      filhos: [] },
-        { id: 'APSD',   sigla: 'APSD',   nome: 'Assessoria de Participação Social e Diversidade',            tipo: 'assessoria',  deptKey: 'Assessoria de Participação Social e Diversidade',              filhos: [] },
-        { id: 'AI',     sigla: 'AI',     nome: 'Assessoria Internacional',                                   tipo: 'assessoria',  deptKey: 'Assessoria Internacional - AESINT',                            filhos: [] },
+        { id: 'CCGM', sigla: 'CCGM', nome: 'Coordenação-Geral do Gabinete do Ministro', tipo: 'coordenacao', deptKey: 'Gabinete do Ministro - GM', filhos: [] },
+        { id: 'CERIM', sigla: 'CERIM', nome: 'Assessoria de Cerimonial', tipo: 'assessoria', deptKey: 'Gabinete do Ministro - GM', filhos: [] },
+        { id: 'ASSAD', sigla: 'ASSAD', nome: 'Assessoria Administrativa', tipo: 'assessoria', deptKey: 'Gabinete do Ministro - GM', filhos: [] },
+        { id: 'AEAPF', sigla: 'AEAPF', nome: 'Assessoria Especial de Assuntos Parlamentares e Federativos', tipo: 'assessoria', deptKey: 'Assessoria Especial de Assuntos Parlamentares e Federativos', filhos: [] },
+        { id: 'AESCOM', sigla: 'AESCOM', nome: 'Assessoria Especial de Comunicação Social', tipo: 'assessoria', deptKey: 'Assessoria Especial de Comunicação Social - AESCOM', filhos: [] },
+        { id: 'AECI', sigla: 'AECI', nome: 'Assessoria Especial de Controle Interno', tipo: 'assessoria', deptKey: 'Assessoria Especial de Controle Interno', filhos: [] },
+        { id: 'APSD', sigla: 'APSD', nome: 'Assessoria de Participação Social e Diversidade', tipo: 'assessoria', deptKey: 'Assessoria de Participação Social e Diversidade', filhos: [] },
+        { id: 'AI', sigla: 'AI', nome: 'Assessoria Internacional', tipo: 'assessoria', deptKey: 'Assessoria Internacional - AESINT', filhos: [] },
       ]
     },
     {
       id: 'SNTR', sigla: 'SNTR', nome: 'Secretaria Nacional de Transporte Rodoviário', tipo: 'secretaria',
       deptKey: 'Secretaria Nacional de Transporte Rodoviário - SNTR',
       filhos: [
-        { id: 'DOP_SNTR',  sigla: 'DOP',  nome: 'Departamento de Obras Públicas',       tipo: 'departamento', deptKey: 'DOP/SNTR - Obras Públicas',        filhos: [] },
+        { id: 'DOP_SNTR', sigla: 'DOP', nome: 'Departamento de Obras Públicas', tipo: 'departamento', deptKey: 'DOP/SNTR - Obras Públicas', filhos: [] },
         { id: 'DOUT_SNTR', sigla: 'DOUT', nome: 'Departamento de Outorgas Rodoviárias', tipo: 'departamento', deptKey: 'DOUT/SNTR - Outorgas Rodoviárias', filhos: [] },
       ]
     },
@@ -52,50 +52,50 @@ const ORG_TREE = {
       id: 'SNTF', sigla: 'SNTF', nome: 'Secretaria Nacional de Transporte Ferroviário', tipo: 'secretaria',
       deptKey: 'Secretaria Nacional de Transporte Ferroviário - SNTF',
       filhos: [
-        { id: 'DOP_SNTF',  sigla: 'DOP',  nome: 'Departamento de Obras e Projetos',      tipo: 'departamento', deptKey: 'DOP/SNTF - Obras e Projetos Ferroviários', filhos: [] },
-        { id: 'DOUT_SNTF', sigla: 'DOUT', nome: 'Departamento de Outorgas Ferroviárias', tipo: 'departamento', deptKey: 'DOUT/SNTF - Outorgas Ferroviárias',        filhos: [] },
+        { id: 'DOP_SNTF', sigla: 'DOP', nome: 'Departamento de Obras e Projetos', tipo: 'departamento', deptKey: 'DOP/SNTF - Obras e Projetos Ferroviários', filhos: [] },
+        { id: 'DOUT_SNTF', sigla: 'DOUT', nome: 'Departamento de Outorgas Ferroviárias', tipo: 'departamento', deptKey: 'DOUT/SNTF - Outorgas Ferroviárias', filhos: [] },
       ]
     },
     {
       id: 'SENATRAN', sigla: 'SENATRAN', nome: 'Secretaria Nacional de Trânsito', tipo: 'secretaria',
       deptKey: 'Secretaria Nacional de Trânsito - SENATRAN',
       filhos: [
-        { id: 'DSEG', sigla: 'DSEG', nome: 'Departamento de Segurança no Trânsito',            tipo: 'departamento', deptKey: 'DSEG/SENATRAN - Segurança no Trânsito',           filhos: [] },
+        { id: 'DSEG', sigla: 'DSEG', nome: 'Departamento de Segurança no Trânsito', tipo: 'departamento', deptKey: 'DSEG/SENATRAN - Segurança no Trânsito', filhos: [] },
         { id: 'DRFG', sigla: 'DRFG', nome: 'Departamento de Regulação, Fiscalização e Gestão', tipo: 'departamento', deptKey: 'DRFG/SENATRAN - Regulação, Fiscalização e Gestão', filhos: [] },
       ]
     },
-    { id: 'CONATT',     sigla: 'CONATT',     nome: 'Comissão Nacional das Autoridades de Transportes Terrestres',   tipo: 'colegiado', deptKey: '', filhos: [] },
-    { id: 'CONTRAN',    sigla: 'CONTRAN',    nome: 'Conselho Nacional de Trânsito',                                  tipo: 'colegiado', deptKey: '', filhos: [] },
-    { id: 'CGNT',       sigla: 'CGNT',       nome: 'Comitê de Governança do Planejamento Integrado de Transportes', tipo: 'colegiado', deptKey: '', filhos: [] },
-    { id: 'CONSETRANS', sigla: 'CONSETRANS', nome: 'Conselho Nacional de Secretários de Transportes',               tipo: 'colegiado', deptKey: '', filhos: [] },
-    { id: 'DNIT',  sigla: 'DNIT',  nome: 'Departamento Nacional de Infraestrutura de Transportes', tipo: 'vinculada', deptKey: '', filhos: [] },
-    { id: 'ANTT',  sigla: 'ANTT',  nome: 'Agência Nacional de Transportes Terrestres',             tipo: 'vinculada', deptKey: '', filhos: [] },
-    { id: 'INFRA', sigla: 'INFRA', nome: 'Infra S.A. / Valec / EPL',                               tipo: 'vinculada', deptKey: '', filhos: [] },
+    { id: 'CONATT', sigla: 'CONATT', nome: 'Comissão Nacional das Autoridades de Transportes Terrestres', tipo: 'colegiado', deptKey: '', filhos: [] },
+    { id: 'CONTRAN', sigla: 'CONTRAN', nome: 'Conselho Nacional de Trânsito', tipo: 'colegiado', deptKey: '', filhos: [] },
+    { id: 'CGNT', sigla: 'CGNT', nome: 'Comitê de Governança do Planejamento Integrado de Transportes', tipo: 'colegiado', deptKey: '', filhos: [] },
+    { id: 'CONSETRANS', sigla: 'CONSETRANS', nome: 'Conselho Nacional de Secretários de Transportes', tipo: 'colegiado', deptKey: '', filhos: [] },
+    { id: 'DNIT', sigla: 'DNIT', nome: 'Departamento Nacional de Infraestrutura de Transportes', tipo: 'vinculada', deptKey: '', filhos: [] },
+    { id: 'ANTT', sigla: 'ANTT', nome: 'Agência Nacional de Transportes Terrestres', tipo: 'vinculada', deptKey: '', filhos: [] },
+    { id: 'INFRA', sigla: 'INFRA', nome: 'Infra S.A. / Valec / EPL', tipo: 'vinculada', deptKey: '', filhos: [] },
   ]
 };
 
 const THEME = {
-  ministerio:    { color: '#e2e8f0', stripe: 'linear-gradient(90deg,#1e3a5f,#0f2d5a)', border: 'rgba(100,140,200,0.5)', badgeBg: 'rgba(30,58,95,0.8)' },
-  secretaria:    { color: '#93c5fd', stripe: 'linear-gradient(90deg,#1d4ed8,#1e40af)', border: 'rgba(59,130,246,0.5)',  badgeBg: 'rgba(29,78,216,0.3)' },
-  gabinete:      { color: '#93c5fd', stripe: 'linear-gradient(90deg,#1d4ed8,#1e40af)', border: 'rgba(59,130,246,0.5)',  badgeBg: 'rgba(29,78,216,0.3)' },
-  subsecretaria: { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#047857,#059669)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(4,120,87,0.3)'  },
-  assessoria:    { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#047857,#059669)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(4,120,87,0.3)'  },
-  coordenacao:   { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#047857,#059669)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(4,120,87,0.3)'  },
-  consultoria:   { color: '#67e8f9', stripe: 'linear-gradient(90deg,#0369a1,#0284c7)', border: 'rgba(14,165,233,0.5)', badgeBg: 'rgba(3,105,161,0.3)' },
-  departamento:  { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#047857,#059669)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(4,120,87,0.3)'  },
-  colegiado:     { color: '#fcd34d', stripe: 'linear-gradient(90deg,#d97706,#b45309)', border: 'rgba(245,158,11,0.5)', badgeBg: 'rgba(217,119,6,0.3)' },
-  vinculada:     { color: '#fb923c', stripe: 'linear-gradient(90deg,#ea580c,#c2410c)', border: 'rgba(249,115,22,0.5)', badgeBg: 'rgba(234,88,12,0.3)'  },
+  ministerio: { color: '#e2e8f0', stripe: 'linear-gradient(90deg,#1e3a5f,#0f2d5a)', border: 'rgba(100,140,200,0.5)', badgeBg: 'rgba(30,58,95,0.8)' },
+  secretaria: { color: '#93c5fd', stripe: 'linear-gradient(90deg,#1d4ed8,#1e40af)', border: 'rgba(59,130,246,0.5)', badgeBg: 'rgba(29,78,216,0.3)' },
+  gabinete: { color: '#93c5fd', stripe: 'linear-gradient(90deg,#1d4ed8,#1e40af)', border: 'rgba(59,130,246,0.5)', badgeBg: 'rgba(29,78,216,0.3)' },
+  subsecretaria: { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#047857,#059669)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(4,120,87,0.3)' },
+  assessoria: { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#047857,#059669)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(4,120,87,0.3)' },
+  coordenacao: { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#047857,#059669)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(4,120,87,0.3)' },
+  consultoria: { color: '#67e8f9', stripe: 'linear-gradient(90deg,#0369a1,#0284c7)', border: 'rgba(14,165,233,0.5)', badgeBg: 'rgba(3,105,161,0.3)' },
+  departamento: { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#047857,#059669)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(4,120,87,0.3)' },
+  colegiado: { color: '#fcd34d', stripe: 'linear-gradient(90deg,#d97706,#b45309)', border: 'rgba(245,158,11,0.5)', badgeBg: 'rgba(217,119,6,0.3)' },
+  vinculada: { color: '#fb923c', stripe: 'linear-gradient(90deg,#ea580c,#c2410c)', border: 'rgba(249,115,22,0.5)', badgeBg: 'rgba(234,88,12,0.3)' },
 };
 
 /* ── Helpers de avatar ─────────────────────────────────────── */
-const AVATAR_COLORS = ['#3b82f6','#8b5cf6','#ef4444','#0891b2','#10b981','#f59e0b','#ec4899','#14b8a6'];
+const AVATAR_COLORS = ['#3b82f6', '#8b5cf6', '#ef4444', '#0891b2', '#10b981', '#f59e0b', '#ec4899', '#14b8a6'];
 function getAvatarColor(name) {
   let h = 0; for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
   return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
 }
 function getInitials(name) {
   const p = name.split(' ').filter(x => x.length > 2);
-  return p.length >= 2 ? (p[0][0] + p[p.length-1][0]).toUpperCase() : name.substring(0,2).toUpperCase();
+  return p.length >= 2 ? (p[0][0] + p[p.length - 1][0]).toUpperCase() : name.substring(0, 2).toUpperCase();
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -245,7 +245,7 @@ const ZOOM_MIN = 0.15, ZOOM_MAX = 2.5, ZOOM_STEP = 0.12, DRAG_THRESHOLD = 5;
 
 const EMAIL_DEFAULT_SUBJECT = 'Comunicado — Ministério dos Transportes';
 const EMAIL_DEFAULT_BODY =
-`Prezado(a),
+  `Prezado(a),
 
 Encaminhamos este comunicado em nome do Ministério dos Transportes.
 
@@ -276,22 +276,22 @@ function clampPan(x, y, scale, canvasEl) {
    COMPONENTE PRINCIPAL
    ═══════════════════════════════════════════════════════════ */
 export default function OrgChart() {
-  const [contacts, setContacts]         = useState([]);
-  const [search, setSearch]             = useState('');
+  const [contacts, setContacts] = useState([]);
+  const [search, setSearch] = useState('');
   const [rootExpanded, setRootExpanded] = useState(true);
   const [selectedNode, setSelectedNode] = useState(null);
-  const [transform, setTransform]       = useState({ x: 0, y: 0, scale: 0.75 });
-  const [isDragging, setIsDragging]     = useState(false);
+  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 0.75 });
+  const [isDragging, setIsDragging] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailSubject, setEmailSubject] = useState(EMAIL_DEFAULT_SUBJECT);
-  const [emailBody, setEmailBody]       = useState(EMAIL_DEFAULT_BODY);
+  const [emailBody, setEmailBody] = useState(EMAIL_DEFAULT_BODY);
   const [emailTargetList, setEmailTargetList] = useState(null); // null = todos
 
-  const canvasRef  = useRef(null);
+  const canvasRef = useRef(null);
   const pointerRef = useRef(null);
 
   useEffect(() => {
-    fetch(`${API}/contacts`).then(r => r.json()).then(setContacts).catch(() => {});
+    fetch(`${API}/contacts`).then(r => r.json()).then(setContacts).catch(() => { });
   }, []);
 
   const displayContacts = useMemo(() => {
@@ -310,13 +310,13 @@ export default function OrgChart() {
   /* ── Zoom com scroll ──────────────────────────────────── */
   const handleWheel = useCallback(e => {
     e.preventDefault();
-    const rect   = canvasRef.current.getBoundingClientRect();
+    const rect = canvasRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     setTransform(prev => {
-      const delta    = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+      const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
       const newScale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, prev.scale + delta));
-      const ratio    = newScale / prev.scale;
+      const ratio = newScale / prev.scale;
       const nx = mouseX - ratio * (mouseX - prev.x);
       const ny = mouseY - ratio * (mouseY - prev.y);
       const clamped = clampPan(nx, ny, newScale, canvasRef.current);
@@ -371,9 +371,9 @@ export default function OrgChart() {
     const { width, height } = el.getBoundingClientRect();
     setTransform(prev => {
       const newScale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, prev.scale + delta));
-      const ratio    = newScale / prev.scale;
-      const nx = width/2 - ratio*(width/2 - prev.x);
-      const ny = height/2 - ratio*(height/2 - prev.y);
+      const ratio = newScale / prev.scale;
+      const nx = width / 2 - ratio * (width / 2 - prev.x);
+      const ny = height / 2 - ratio * (height / 2 - prev.y);
       const clamped = clampPan(nx, ny, newScale, el);
       return { scale: newScale, ...clamped };
     });
@@ -394,15 +394,15 @@ export default function OrgChart() {
   };
 
   const sendEmail = () => {
-    const list   = emailTargetList ?? contacts;
+    const list = emailTargetList ?? contacts;
     const emails = list.map(c => c.email).filter(Boolean);
     if (emails.length === 0) {
       alert('Nenhum e-mail encontrado nos contatos selecionados.');
       return;
     }
-    const to      = emails.join(';');
+    const to = emails.join(';');
     const subject = encodeURIComponent(emailSubject);
-    const body    = encodeURIComponent(emailBody);
+    const body = encodeURIComponent(emailBody);
     window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
   };
 
@@ -425,7 +425,7 @@ export default function OrgChart() {
       <div className="org-toolbar">
         <div className="org-title-area">
           <h2>
-            <Network size={16} style={{ display:'inline', verticalAlign:'middle', marginRight:8, color:'var(--primary)' }} />
+            <Network size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, color: 'var(--primary)' }} />
             Estrutura Organizacional
           </h2>
           <p>Clique num card para ver as pessoas · Arraste para mover · Scroll para zoom</p>

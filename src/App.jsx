@@ -100,7 +100,7 @@ function ContactCard({ contact, onEdit, selected, onToggle, viewMode }) {
 /* ── E-mail predefinido padrão ───────────────────────────── */
 const EMAIL_DEFAULT_SUBJECT = 'Comunicado — Ministério dos Transportes';
 const EMAIL_DEFAULT_BODY =
-`Prezado(a),
+  `Prezado(a),
 
 Encaminhamos este comunicado em nome do Ministério dos Transportes.
 
@@ -109,17 +109,17 @@ Equipe de Gestão de Pessoas — MT`;
 
 /* ── App Principal ───────────────────────────────────────── */
 export default function App() {
-  const [activeTab, setActiveTab]       = useState('contacts');
-  const [contacts, setContacts]         = useState([]);
-  const [departments, setDepartments]   = useState([]);
-  const [stats, setStats]               = useState({ totalContatos: 0, totalDepartamentos: 0, comEmail: 0, comTelefone: 0 });
-  const [search, setSearch]             = useState('');
+  const [activeTab, setActiveTab] = useState('contacts');
+  const [contacts, setContacts] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [stats, setStats] = useState({ totalContatos: 0, totalDepartamentos: 0, comEmail: 0, comTelefone: 0 });
+  const [search, setSearch] = useState('');
   const [selectedDept, setSelectedDept] = useState('Todos');
-  const [selected, setSelected]         = useState(new Set());
-  const [viewMode, setViewMode]         = useState('grid');
+  const [selected, setSelected] = useState(new Set());
+  const [viewMode, setViewMode] = useState('grid');
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailSubject, setEmailSubject] = useState(EMAIL_DEFAULT_SUBJECT);
-  const [emailBody, setEmailBody]       = useState(EMAIL_DEFAULT_BODY);
+  const [emailBody, setEmailBody] = useState(EMAIL_DEFAULT_BODY);
 
   const fetchContacts = useCallback(async () => {
     try {
@@ -149,12 +149,12 @@ export default function App() {
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url;
-    a.download = `contatos_${selected.size > 0 ? 'selecionados' : 'todos'}_${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `contatos_${selected.size > 0 ? 'selecionados' : 'todos'}_${new Date().toISOString().slice(0, 10)}.json`;
     a.click(); URL.revokeObjectURL(url);
   };
 
   const downloadCSV = () => {
-    const headers = ['nome','cargo','departamento','email','telefone'];
+    const headers = ['nome', 'cargo', 'departamento', 'email', 'telefone'];
     const rows = selectedContacts.map(c =>
       headers.map(h => `"${(c[h] || '').toString().replace(/"/g, '""')}"`).join(',')
     );
@@ -162,7 +162,7 @@ export default function App() {
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url;
-    a.download = `contatos_${selected.size > 0 ? 'selecionados' : 'todos'}_${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `contatos_${selected.size > 0 ? 'selecionados' : 'todos'}_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click(); URL.revokeObjectURL(url);
   };
 
@@ -174,9 +174,9 @@ export default function App() {
       alert('Nenhum e-mail encontrado nos contatos selecionados.');
       return;
     }
-    const to      = emails.join(';');
+    const to = emails.join(';');
     const subject = encodeURIComponent(emailSubject);
-    const body    = encodeURIComponent(emailBody);
+    const body = encodeURIComponent(emailBody);
     window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
   };
 
