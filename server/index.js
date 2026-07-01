@@ -8,11 +8,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 const DATA_FILE = join(__dirname, 'data', 'contacts.json');
+const DIST_DIR = join(__dirname, '..', 'dist');
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(DIST_DIR));
 
 function loadContacts() {
   const data = readFileSync(DATA_FILE, 'utf-8');
@@ -109,6 +111,11 @@ app.get('/api/stats', (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Erro ao carregar estatísticas' });
   }
+});
+
+// SPA fallback: qualquer rota que não seja /api/* devolve o index.html do build
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(join(DIST_DIR, 'index.html'));
 });
 
 app.listen(PORT, () => {
