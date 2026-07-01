@@ -3,7 +3,7 @@ import { Search, Users, Building2, Mail, Phone, Edit3, CheckSquare, Square, Layo
 import OrgChart from './OrgChart';
 import './index.css';
 
-const API = 'http://localhost:3001/api';
+const API = '/api';
 
 /* ── Helpers ────────────────────────────────────────────── */
 const AVATAR_COLORS = [
