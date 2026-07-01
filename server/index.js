@@ -1,123 +1,155 @@
 import express from 'express';
 import cors from 'cors';
-import { readFileSync, writeFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { createClient } from '@supabase/supabase-js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const DATA_FILE = join(__dirname, 'data', 'contacts.json');
-const DIST_DIR = join(__dirname, '..', 'dist');
+const DIST_DIR = new URL('../dist', import.meta.url).pathname;
+
+// Cliente Supabase — usa a service_role key porque isso roda só no back-end
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(DIST_DIR));
 
-function loadContacts() {
-  const data = readFileSync(DATA_FILE, 'utf-8');
-  return JSON.parse(data);
-}
-
-function saveContacts(contacts) {
-  writeFileSync(DATA_FILE, JSON.stringify(contacts, null, 2), 'utf-8');
-}
-
 // GET all contacts with optional search/filter
-app.get('/api/contacts', (req, res) => {
+app.get('/api/contacts', async (req, res) => {
   try {
-    let contacts = loadContacts();
     const { search, departamento } = req.query;
 
+    let query = supabase.from('contacts').select('*').order('id', { ascending: true });
+
+    if (departamento && departamento !== 'Todos') {
+      query = query.eq('departamento', departamento);
+    }
+
     if (search) {
-      const term = search.toLowerCase();
-      contacts = contacts.filter(c =>
-        c.nome.toLowerCase().includes(term) ||
-        c.cargo.toLowerCase().includes(term) ||
-        c.email.toLowerCase().includes(term) ||
-        c.telefone.toLowerCase().includes(term) ||
-        c.departamento.toLowerCase().includes(term)
+      const term = `%${search}%`;
+      query = query.or(
+        `nome.ilike.${term},cargo.ilike.${term},email.ilike.${term},telefone.ilike.${term},departamento.ilike.${term}`
       );
     }
 
-    if (departamento && departamento !== 'Todos') {
-      contacts = contacts.filter(c => c.departamento === departamento);
-    }
+    const { data, error } = await query;
+    if (error) throw error;
 
-    res.json(contacts);
+    res.json(data);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Erro ao carregar contatos' });
   }
 });
 
 // GET single contact
-app.get('/api/contacts/:id', (req, res) => {
+app.get('/api/contacts/:id', async (req, res) => {
   try {
-    const contacts = loadContacts();
-    const contact = contacts.find(c => c.id === parseInt(req.params.id));
-    if (!contact) return res.status(404).json({ error: 'Contato não encontrado' });
-    res.json(contact);
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (error || !data) return res.status(404).json({ error: 'Contato não encontrado' });
+
+    res.json(data);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Erro ao carregar contato' });
   }
 });
 
 // PUT update contact
-app.put('/api/contacts/:id', (req, res) => {
+app.put('/api/contacts/:id', async (req, res) => {
   try {
-    const contacts = loadContacts();
-    const index = contacts.findIndex(c => c.id === parseInt(req.params.id));
-    if (index === -1) return res.status(404).json({ error: 'Contato não encontrado' });
+    const { id, ...updates } = req.body;
 
-    contacts[index] = { ...contacts[index], ...req.body, id: contacts[index].id };
-    saveContacts(contacts);
-    res.json(contacts[index]);
+    const { data, error } = await supabase
+      .from('contacts')
+      .update(updates)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error || !data) return res.status(404).json({ error: 'Contato não encontrado' });
+
+    res.json(data);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Erro ao atualizar contato' });
   }
 });
 
 // GET departments list
-app.get('/api/departments', (req, res) => {
+app.get('/api/departments', async (req, res) => {
   try {
-    const contacts = loadContacts();
-    const departments = [...new Set(contacts.map(c => c.departamento))].sort();
-    const deptCounts = departments.map(dept => ({
-      nome: dept,
-      total: contacts.filter(c => c.departamento === dept).length
-    }));
-    res.json(deptCounts);
+    const { data, error } = await supabase.from('contacts').select('departamento');
+    if (error) throw error;
+
+    const counts = {};
+    for (const row of data) {
+      counts[row.departamento] = (counts[row.departamento] || 0) + 1;
+    }
+
+    const departments = Object.entries(counts)
+      .map(([nome, total]) => ({ nome, total }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+
+    res.json(departments);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Erro ao carregar departamentos' });
   }
 });
 
 // GET stats
-app.get('/api/stats', (req, res) => {
+app.get('/api/stats', async (req, res) => {
   try {
-    const contacts = loadContacts();
-    const departments = [...new Set(contacts.map(c => c.departamento))];
-    const withEmail = contacts.filter(c => c.email && c.email.length > 0).length;
-    const withPhone = contacts.filter(c => c.telefone && c.telefone.length > 0).length;
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('departamento, email, telefone');
+
+    if (error) throw error;
+
+    const departments = new Set(data.map(c => c.departamento));
+    const withEmail = data.filter(c => c.email && c.email.length > 0).length;
+    const withPhone = data.filter(c => c.telefone && c.telefone.length > 0).length;
 
     res.json({
-      totalContatos: contacts.length,
-      totalDepartamentos: departments.length,
+      totalContatos: data.length,
+      totalDepartamentos: departments.size,
       comEmail: withEmail,
       comTelefone: withPhone
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Erro ao carregar estatísticas' });
   }
 });
 
 // SPA fallback: qualquer rota que não seja /api/* devolve o index.html do build
 app.get(/^(?!\/api).*/, (req, res) => {
-  res.sendFile(join(DIST_DIR, 'index.html'));
+  res.sendFile(`${DIST_DIR}/index.html`);
 });
 
-app.listen(PORT, () => {
+async function checkSupabaseConnection() {
+  try {
+    const { error, count } = await supabase
+      .from('contacts')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) throw error;
+
+    console.log(`✅ Conectado ao Supabase! (${count} contatos na tabela)`);
+  } catch (error) {
+    console.error('❌ Falha ao conectar com o Supabase:', error.message);
+  }
+}
+
+app.listen(PORT, async () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+  await checkSupabaseConnection();
 });
