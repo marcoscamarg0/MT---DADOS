@@ -3,7 +3,7 @@ import { Tree, TreeNode } from 'react-organizational-chart';
 import { Users, ChevronDown, ChevronUp, Search, Network, ZoomIn, ZoomOut, Maximize2, X, Mail, Phone, Building2, Send } from 'lucide-react';
 import './index.css';
 
-const API = 'http://localhost:3001/api';
+const API = '/api';
 
 /* ═══════════════════════════════════════════════════════════
    ESTRUTURA ORGANIZACIONAL
