@@ -100,12 +100,9 @@ function ContactCard({ contact, onEdit, selected, onToggle, viewMode }) {
 /* ── E-mail predefinido padrão ───────────────────────────── */
 const EMAIL_DEFAULT_SUBJECT = 'Comunicado — Ministério dos Transportes';
 const EMAIL_DEFAULT_BODY =
-  `Prezado(a),
-
-Encaminhamos este comunicado em nome do Ministério dos Transportes.
-
-Atenciosamente,
-Equipe de Gestão de Pessoas — MT`;
+  `<p>Prezado(a) {{nome}},</p>
+<p>Encaminhamos este comunicado em nome do Ministério dos Transportes.</p>
+<p>Atenciosamente,<br>Equipe de Gestão de Pessoas — MT</p>`;
 
 /* ── App Principal ───────────────────────────────────────── */
 export default function App() {
@@ -166,18 +163,31 @@ export default function App() {
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const sendEmail = () => {
-    const emails = selectedContacts
-      .map(c => c.email)
-      .filter(Boolean);
-    if (emails.length === 0) {
-      alert('Nenhum e-mail encontrado nos contatos selecionados.');
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState(null);
+
+  const sendEmail = async () => {
+    const ids = selectedContacts.map(c => c.id);
+    if (ids.length === 0) {
+      alert('Nenhum contato selecionado.');
       return;
     }
-    const to = emails.join(';');
-    const subject = encodeURIComponent(emailSubject);
-    const body = encodeURIComponent(emailBody);
-    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+    setSending(true);
+    setSendResult(null);
+    try {
+      const res = await fetch(`${API}/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: emailSubject, html: emailBody, contactIds: ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao enviar');
+      setSendResult(data);
+    } catch (err) {
+      setSendResult({ error: err.message });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -393,14 +403,37 @@ export default function App() {
                 placeholder="Assunto do e-mail..."
               />
 
-              <label className="modal-label" style={{ marginTop: 16 }}>Corpo da mensagem</label>
+              <label className="modal-label" style={{ marginTop: 16 }}>
+                Corpo do e-mail (HTML) — use <code>{'{{nome}}'}</code> pra personalizar com o nome do contato
+              </label>
               <textarea
                 className="modal-textarea"
                 value={emailBody}
                 onChange={e => setEmailBody(e.target.value)}
-                rows={7}
-                placeholder="Corpo do e-mail..."
+                rows={9}
+                placeholder="<p>Olá {{nome}},</p><p>Sua mensagem aqui...</p>"
+                style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
               />
+
+              <label className="modal-label" style={{ marginTop: 16 }}>Prévia</label>
+              <div
+                style={{
+                  border: '1px solid var(--border)', borderRadius: 8, padding: 12,
+                  maxHeight: 180, overflow: 'auto', background: '#fff'
+                }}
+                dangerouslySetInnerHTML={{ __html: emailBody }}
+              />
+
+              {sendResult && (
+                <div style={{
+                  marginTop: 12, padding: 10, borderRadius: 8, fontSize: '0.8rem',
+                  background: sendResult.error ? 'var(--warning-light)' : 'var(--success-light)'
+                }}>
+                  {sendResult.error
+                    ? `Erro: ${sendResult.error}`
+                    : `Enviados: ${sendResult.enviados}/${sendResult.total}${sendResult.falharam ? ` (${sendResult.falharam} falharam)` : ''}`}
+                </div>
+              )}
 
               <div className="modal-footer">
                 <button
@@ -409,8 +442,8 @@ export default function App() {
                 >
                   Restaurar padrão
                 </button>
-                <button className="action-btn email-btn" onClick={sendEmail}>
-                  <Send size={14} /> Abrir no cliente de e-mail
+                <button className="action-btn email-btn" onClick={sendEmail} disabled={sending}>
+                  <Send size={14} /> {sending ? 'Enviando...' : 'Enviar e-mails'}
                 </button>
               </div>
             </div>
