@@ -137,13 +137,15 @@ app.get(/^(?!\/api).*/, (req, res) => {
 
 async function checkSupabaseConnection() {
   try {
-    const { error, count } = await supabase
+    const { data, error } = await supabase
       .from('contacts')
-      .select('*', { count: 'exact', head: true });
+      .select('id, nome')
+      .limit(5);
 
     if (error) throw error;
 
-    console.log(`✅ Conectado ao Supabase! (${count} contatos na tabela)`);
+    console.log(`✅ Conectado ao Supabase! (${data.length} registros na amostra)`);
+    console.log('Exemplo:', data);
   } catch (error) {
     console.error('❌ Falha ao conectar com o Supabase:', error.message);
   }
