@@ -7,7 +7,7 @@
     "dev": "vite",
     "server": "node server/index.js",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
-    "build": "npm run build",
+    "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"
   },
