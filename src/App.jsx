@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Users, Building2, Mail, Phone, Edit3, CheckSquare, Square, LayoutGrid, List, Download, X, Send } from 'lucide-react';
+import { Search, Users, Building2, Mail, Phone, Edit3, CheckSquare, Square, LayoutGrid, List, Download, X, Copy, FileDown, LayoutTemplate, Check } from 'lucide-react';
 import OrgChart from './OrgChart';
 import './index.css';
 
@@ -97,12 +97,67 @@ function ContactCard({ contact, onEdit, selected, onToggle, viewMode }) {
   );
 }
 
-/* ── E-mail predefinido padrão ───────────────────────────── */
-const EMAIL_DEFAULT_SUBJECT = 'Comunicado — Ministério dos Transportes';
-const EMAIL_DEFAULT_BODY =
-  `<p>Prezado(a) {{nome}},</p>
+/* ── Predefinições de corpo do e-mail ────────────────────── */
+const EMAIL_PRESETS = [
+  {
+    id: 'comunicado',
+    label: 'Comunicado Geral',
+    subject: 'Comunicado — Ministério dos Transportes',
+    body:
+`<p>Prezado(a) {{nome}},</p>
 <p>Encaminhamos este comunicado em nome do Ministério dos Transportes.</p>
-<p>Atenciosamente,<br>Equipe de Gestão de Pessoas — MT</p>`;
+<p>Atenciosamente,<br>Equipe de Gestão de Pessoas — MT</p>`,
+  },
+  {
+    id: 'reuniao',
+    label: 'Convite para Reunião',
+    subject: 'Convite: Reunião — Ministério dos Transportes',
+    body:
+`<p>Prezado(a) {{nome}},</p>
+<p>Convidamos você para participar de uma reunião a ser realizada em <strong>[data]</strong>, às <strong>[hora]</strong>, em <strong>[local/link]</strong>.</p>
+<p><strong>Pauta:</strong> [descreva os principais pontos da reunião]</p>
+<p>Pedimos a gentileza de confirmar presença.</p>
+<p>Atenciosamente,<br>Equipe de Gestão de Pessoas — MT</p>`,
+  },
+  {
+    id: 'urgente',
+    label: 'Aviso Urgente',
+    subject: 'Aviso Importante — Ministério dos Transportes',
+    body:
+`<p>Prezado(a) {{nome}},</p>
+<p style="color:#b91c1c;font-weight:600;">Este é um aviso de caráter urgente.</p>
+<p>[Descreva aqui a informação ou providência necessária.]</p>
+<p>Pedimos atenção imediata a este comunicado.</p>
+<p>Atenciosamente,<br>Equipe de Gestão de Pessoas — MT</p>`,
+  },
+  {
+    id: 'boas-vindas',
+    label: 'Boas-vindas',
+    subject: 'Bem-vindo(a) ao Ministério dos Transportes',
+    body:
+`<p>Prezado(a) {{nome}},</p>
+<p>É com satisfação que damos as boas-vindas à nossa equipe.</p>
+<p>Nas próximas semanas você receberá informações sobre integração, sistemas de acesso e demais rotinas do órgão.</p>
+<p>Qualquer dúvida, nossa equipe está à disposição.</p>
+<p>Atenciosamente,<br>Equipe de Gestão de Pessoas — MT</p>`,
+  },
+  {
+    id: 'agradecimento',
+    label: 'Agradecimento',
+    subject: 'Agradecimento — Ministério dos Transportes',
+    body:
+`<p>Prezado(a) {{nome}},</p>
+<p>Gostaríamos de expressar nosso agradecimento pelo empenho e dedicação demonstrados.</p>
+<p>Seu trabalho contribui diretamente para os resultados do Ministério dos Transportes.</p>
+<p>Atenciosamente,<br>Equipe de Gestão de Pessoas — MT</p>`,
+  },
+  {
+    id: 'em-branco',
+    label: 'Em Branco',
+    subject: '',
+    body: `<p>Prezado(a) {{nome}},</p>\n<p></p>`,
+  },
+];
 
 /* ── App Principal ───────────────────────────────────────── */
 export default function App() {
@@ -115,8 +170,9 @@ export default function App() {
   const [selected, setSelected] = useState(new Set());
   const [viewMode, setViewMode] = useState('grid');
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailSubject, setEmailSubject] = useState(EMAIL_DEFAULT_SUBJECT);
-  const [emailBody, setEmailBody] = useState(EMAIL_DEFAULT_BODY);
+  const [activePreset, setActivePreset] = useState(EMAIL_PRESETS[0].id);
+  const [emailSubject, setEmailSubject] = useState(EMAIL_PRESETS[0].subject);
+  const [emailBody, setEmailBody] = useState(EMAIL_PRESETS[0].body);
 
   const fetchContacts = useCallback(async () => {
     try {
@@ -163,31 +219,56 @@ export default function App() {
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState(null);
+  const applyPreset = presetId => {
+    const preset = EMAIL_PRESETS.find(p => p.id === presetId);
+    if (!preset) return;
+    setActivePreset(presetId);
+    setEmailSubject(preset.subject);
+    setEmailBody(preset.body);
+    setCopyStatus(null);
+  };
 
-  const sendEmail = async () => {
-    const ids = selectedContacts.map(c => c.id);
-    if (ids.length === 0) {
-      alert('Nenhum contato selecionado.');
+  const [copyStatus, setCopyStatus] = useState(null); // 'html' | 'emails' | null
+
+  const compiledPreviewHtml = emailBody.replaceAll('{{nome}}', 'Fulano de Tal');
+
+  const copyHtmlToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(emailBody);
+      setCopyStatus('html');
+      setTimeout(() => setCopyStatus(null), 2000);
+    } catch {
+      alert('Não foi possível copiar. Selecione o texto manualmente.');
+    }
+  };
+
+  const copyEmailListToClipboard = async () => {
+    const emails = selectedContacts.filter(c => c.email).map(c => c.email);
+    if (emails.length === 0) {
+      alert('Nenhum destinatário com e-mail cadastrado.');
       return;
     }
-    setSending(true);
-    setSendResult(null);
     try {
-      const res = await fetch(`${API}/send-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject: emailSubject, html: emailBody, contactIds: ids }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erro ao enviar');
-      setSendResult(data);
-    } catch (err) {
-      setSendResult({ error: err.message });
-    } finally {
-      setSending(false);
+      await navigator.clipboard.writeText(emails.join('; '));
+      setCopyStatus('emails');
+      setTimeout(() => setCopyStatus(null), 2000);
+    } catch {
+      alert('Não foi possível copiar a lista de e-mails.');
     }
+  };
+
+  const downloadEmailHtml = () => {
+    const fullHtml =
+      `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>${emailSubject || 'E-mail'}</title></head>
+<body>
+${emailBody}
+</body></html>`;
+    const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = `email_${activePreset}_${new Date().toISOString().slice(0, 10)}.html`;
+    a.click(); URL.revokeObjectURL(url);
   };
 
   return (
@@ -378,12 +459,12 @@ export default function App() {
       {/* Modal de E-mail Predefinido */}
       {showEmailModal && (
         <div className="modal-overlay" onClick={() => setShowEmailModal(false)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}>
+          <div className="modal-box modal-box-lg" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Mail size={18} style={{ color: 'var(--primary)' }} />
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Enviar E-mail</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Compor E-mail</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
                     {selected.size > 0
                       ? `${selected.size} destinatário${selected.size > 1 ? 's' : ''} selecionado${selected.size > 1 ? 's' : ''}`
@@ -394,58 +475,85 @@ export default function App() {
               <button className="modal-close" onClick={() => setShowEmailModal(false)}><X size={16} /></button>
             </div>
 
-            <div className="modal-body">
-              <label className="modal-label">Assunto</label>
-              <input
-                className="modal-input"
-                value={emailSubject}
-                onChange={e => setEmailSubject(e.target.value)}
-                placeholder="Assunto do e-mail..."
-              />
-
-              <label className="modal-label" style={{ marginTop: 16 }}>
-                Corpo do e-mail (HTML) — use <code>{'{{nome}}'}</code> pra personalizar com o nome do contato
-              </label>
-              <textarea
-                className="modal-textarea"
-                value={emailBody}
-                onChange={e => setEmailBody(e.target.value)}
-                rows={9}
-                placeholder="<p>Olá {{nome}},</p><p>Sua mensagem aqui...</p>"
-                style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
-              />
-
-              <label className="modal-label" style={{ marginTop: 16 }}>Prévia</label>
-              <div
-                style={{
-                  border: '1px solid var(--border)', borderRadius: 8, padding: 12,
-                  maxHeight: 180, overflow: 'auto', background: '#fff'
-                }}
-                dangerouslySetInnerHTML={{ __html: emailBody }}
-              />
-
-              {sendResult && (
-                <div style={{
-                  marginTop: 12, padding: 10, borderRadius: 8, fontSize: '0.8rem',
-                  background: sendResult.error ? 'var(--warning-light)' : 'var(--success-light)'
-                }}>
-                  {sendResult.error
-                    ? `Erro: ${sendResult.error}`
-                    : `Enviados: ${sendResult.enviados}/${sendResult.total}${sendResult.falharam ? ` (${sendResult.falharam} falharam)` : ''}`}
+            <div className="modal-body modal-body-split">
+              {/* Coluna esquerda: edição */}
+              <div className="email-editor-col">
+                <label className="modal-label">
+                  <LayoutTemplate size={12} style={{ verticalAlign: '-2px', marginRight: 4 }} />
+                  Predefinição do corpo do e-mail
+                </label>
+                <div className="preset-pills">
+                  {EMAIL_PRESETS.map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`preset-pill${activePreset === p.id ? ' active' : ''}`}
+                      onClick={() => applyPreset(p.id)}
+                      title={`Usar predefinição "${p.label}"`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
-              )}
 
-              <div className="modal-footer">
-                <button
-                  className="action-btn"
-                  onClick={() => { setEmailSubject(EMAIL_DEFAULT_SUBJECT); setEmailBody(EMAIL_DEFAULT_BODY); }}
-                >
-                  Restaurar padrão
-                </button>
-                <button className="action-btn email-btn" onClick={sendEmail} disabled={sending}>
-                  <Send size={14} /> {sending ? 'Enviando...' : 'Enviar e-mails'}
-                </button>
+                <label className="modal-label" style={{ marginTop: 16 }}>Assunto</label>
+                <input
+                  className="modal-input"
+                  value={emailSubject}
+                  onChange={e => setEmailSubject(e.target.value)}
+                  placeholder="Assunto do e-mail..."
+                />
+
+                <label className="modal-label" style={{ marginTop: 16 }}>
+                  Corpo do e-mail (HTML) — use <code>{'{{nome}}'}</code> pra personalizar com o nome do contato
+                </label>
+                <textarea
+                  className="modal-textarea email-textarea-lg"
+                  value={emailBody}
+                  onChange={e => { setEmailBody(e.target.value); setCopyStatus(null); }}
+                  placeholder="<p>Olá {{nome}},</p><p>Sua mensagem aqui...</p>"
+                  style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
+                />
               </div>
+
+              {/* Coluna direita: prévia grande */}
+              <div className="email-preview-col">
+                <label className="modal-label">Prévia (como o destinatário verá)</label>
+                <div className="email-preview-frame">
+                  <div className="email-preview-toolbar">
+                    <span className="email-preview-dot" style={{ background: '#ef4444' }} />
+                    <span className="email-preview-dot" style={{ background: '#f59e0b' }} />
+                    <span className="email-preview-dot" style={{ background: '#10b981' }} />
+                  </div>
+                  <div className="email-preview-meta">
+                    <div><strong>Assunto:</strong> {emailSubject || '(sem assunto)'}</div>
+                  </div>
+                  <div
+                    className="email-preview-html"
+                    dangerouslySetInnerHTML={{ __html: compiledPreviewHtml }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ padding: '0 24px 24px' }}>
+              <button
+                className="action-btn"
+                onClick={() => applyPreset(EMAIL_PRESETS[0].id)}
+              >
+                Restaurar padrão
+              </button>
+              <button className="action-btn" onClick={copyEmailListToClipboard}>
+                {copyStatus === 'emails' ? <Check size={14} /> : <Copy size={14} />}
+                {copyStatus === 'emails' ? ' Copiado!' : ' Copiar e-mails'}
+              </button>
+              <button className="action-btn" onClick={downloadEmailHtml}>
+                <FileDown size={14} /> Baixar .html
+              </button>
+              <button className="action-btn email-btn" onClick={copyHtmlToClipboard}>
+                {copyStatus === 'html' ? <Check size={14} /> : <Copy size={14} />}
+                {copyStatus === 'html' ? ' HTML copiado!' : ' Copiar HTML'}
+              </button>
             </div>
           </div>
         </div>
