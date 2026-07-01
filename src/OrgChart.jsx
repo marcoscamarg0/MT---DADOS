@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Tree, TreeNode } from 'react-organizational-chart';
-import { Users, ChevronDown, ChevronUp, Search, Network, ZoomIn, ZoomOut, Maximize2, X, Mail, Phone, Building2, Send } from 'lucide-react';
+import { Users, ChevronDown, ChevronUp, Search, Network, ZoomIn, ZoomOut, Maximize2, X, Mail, Phone, Building2, Send, LayoutTemplate } from 'lucide-react';
+import { EMAIL_PRESETS, openMailClient } from './emailTemplates';
 import './index.css';
 
 const API = '/api';
@@ -41,7 +42,7 @@ const ORG_TREE = {
       ]
     },
     {
-      id: 'SNTR', sigla: 'SNTR', nome: 'Secretaria Nacional de Transporte Rodoviário', tipo: 'secretaria',
+      id: 'SNTR', sigla: 'SNTR', nome: 'Secretaria Nacional de Transporte Rodoviário', tipo: 'secretaria-nacional',
       deptKey: 'Secretaria Nacional de Transporte Rodoviário - SNTR',
       filhos: [
         { id: 'DOP_SNTR', sigla: 'DOP', nome: 'Departamento de Obras Públicas', tipo: 'departamento', deptKey: 'DOP/SNTR - Obras Públicas', filhos: [] },
@@ -49,7 +50,7 @@ const ORG_TREE = {
       ]
     },
     {
-      id: 'SNTF', sigla: 'SNTF', nome: 'Secretaria Nacional de Transporte Ferroviário', tipo: 'secretaria',
+      id: 'SNTF', sigla: 'SNTF', nome: 'Secretaria Nacional de Transporte Ferroviário', tipo: 'secretaria-nacional',
       deptKey: 'Secretaria Nacional de Transporte Ferroviário - SNTF',
       filhos: [
         { id: 'DOP_SNTF', sigla: 'DOP', nome: 'Departamento de Obras e Projetos', tipo: 'departamento', deptKey: 'DOP/SNTF - Obras e Projetos Ferroviários', filhos: [] },
@@ -57,7 +58,7 @@ const ORG_TREE = {
       ]
     },
     {
-      id: 'SENATRAN', sigla: 'SENATRAN', nome: 'Secretaria Nacional de Trânsito', tipo: 'secretaria',
+      id: 'SENATRAN', sigla: 'SENATRAN', nome: 'Secretaria Nacional de Trânsito', tipo: 'secretaria-nacional',
       deptKey: 'Secretaria Nacional de Trânsito - SENATRAN',
       filhos: [
         { id: 'DSEG', sigla: 'DSEG', nome: 'Departamento de Segurança no Trânsito', tipo: 'departamento', deptKey: 'DSEG/SENATRAN - Segurança no Trânsito', filhos: [] },
@@ -78,11 +79,12 @@ const THEME = {
   ministerio: { color: '#e2e8f0', stripe: 'linear-gradient(90deg,#1e3a5f,#0f2d5a)', border: 'rgba(100,140,200,0.5)', badgeBg: 'rgba(30,58,95,0.8)' },
   secretaria: { color: '#93c5fd', stripe: 'linear-gradient(90deg,#1d4ed8,#1e40af)', border: 'rgba(59,130,246,0.5)', badgeBg: 'rgba(29,78,216,0.3)' },
   gabinete: { color: '#93c5fd', stripe: 'linear-gradient(90deg,#1d4ed8,#1e40af)', border: 'rgba(59,130,246,0.5)', badgeBg: 'rgba(29,78,216,0.3)' },
-  subsecretaria: { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#047857,#059669)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(4,120,87,0.3)' },
-  assessoria: { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#047857,#059669)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(4,120,87,0.3)' },
-  coordenacao: { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#047857,#059669)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(4,120,87,0.3)' },
-  consultoria: { color: '#67e8f9', stripe: 'linear-gradient(90deg,#0369a1,#0284c7)', border: 'rgba(14,165,233,0.5)', badgeBg: 'rgba(3,105,161,0.3)' },
-  departamento: { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#047857,#059669)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(4,120,87,0.3)' },
+  subsecretaria: { color: '#93c5fd', stripe: 'linear-gradient(90deg,#1d4ed8,#1e40af)', border: 'rgba(59,130,246,0.5)', badgeBg: 'rgba(29,78,216,0.3)' },
+  assessoria: { color: '#93c5fd', stripe: 'linear-gradient(90deg,#1d4ed8,#1e40af)', border: 'rgba(59,130,246,0.5)', badgeBg: 'rgba(29,78,216,0.3)' },
+  coordenacao: { color: '#93c5fd', stripe: 'linear-gradient(90deg,#1d4ed8,#1e40af)', border: 'rgba(59,130,246,0.5)', badgeBg: 'rgba(29,78,216,0.3)' },
+  consultoria: { color: '#93c5fd', stripe: 'linear-gradient(90deg,#1d4ed8,#1e40af)', border: 'rgba(59,130,246,0.5)', badgeBg: 'rgba(29,78,216,0.3)' },
+  'secretaria-nacional': { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#065f46,#047857)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(6,95,70,0.35)' },
+  departamento: { color: '#6ee7b7', stripe: 'linear-gradient(90deg,#059669,#10b981)', border: 'rgba(16,185,129,0.5)', badgeBg: 'rgba(5,150,105,0.3)' },
   colegiado: { color: '#fcd34d', stripe: 'linear-gradient(90deg,#d97706,#b45309)', border: 'rgba(245,158,11,0.5)', badgeBg: 'rgba(217,119,6,0.3)' },
   vinculada: { color: '#fb923c', stripe: 'linear-gradient(90deg,#ea580c,#c2410c)', border: 'rgba(249,115,22,0.5)', badgeBg: 'rgba(234,88,12,0.3)' },
 };
@@ -124,7 +126,7 @@ function NodeCard({ node, contacts, contactList, isRoot, expanded, onToggle, onS
             </span>
           )}
         </div>
-        <h3 className="card-title">{node.nome}</h3>
+        <h3 className="card-title" title={node.nome}>{node.nome}</h3>
         <p className="card-subtitle">{node.tipo}</p>
         {hasChildren && (
           <button
@@ -243,15 +245,6 @@ function ContactPanel({ node, contacts, onClose, onEmail }) {
    ═══════════════════════════════════════════════════════ */
 const ZOOM_MIN = 0.15, ZOOM_MAX = 2.5, ZOOM_STEP = 0.12, DRAG_THRESHOLD = 5;
 
-const EMAIL_DEFAULT_SUBJECT = 'Comunicado — Ministério dos Transportes';
-const EMAIL_DEFAULT_BODY =
-  `Prezado(a),
-
-Encaminhamos este comunicado em nome do Ministério dos Transportes.
-
-Atenciosamente,
-Equipe de Gestão de Pessoas — MT`;
-
 /* Tamanho virtual máximo do conteúdo (margem de segurança) */
 const CONTENT_VIRTUAL_W = 7000;
 const CONTENT_VIRTUAL_H = 4000;
@@ -283,8 +276,9 @@ export default function OrgChart() {
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 0.75 });
   const [isDragging, setIsDragging] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailSubject, setEmailSubject] = useState(EMAIL_DEFAULT_SUBJECT);
-  const [emailBody, setEmailBody] = useState(EMAIL_DEFAULT_BODY);
+  const [activePreset, setActivePreset] = useState(EMAIL_PRESETS[0].id);
+  const [emailSubject, setEmailSubject] = useState(EMAIL_PRESETS[0].subject);
+  const [emailBody, setEmailBody] = useState(EMAIL_PRESETS[0].body);
   const [emailTargetList, setEmailTargetList] = useState(null); // null = todos
 
   const canvasRef = useRef(null);
@@ -393,6 +387,14 @@ export default function OrgChart() {
     setShowEmailModal(true);
   };
 
+  const applyPreset = presetId => {
+    const preset = EMAIL_PRESETS.find(p => p.id === presetId);
+    if (!preset) return;
+    setActivePreset(presetId);
+    setEmailSubject(preset.subject);
+    setEmailBody(preset.body);
+  };
+
   const sendEmail = () => {
     const list = emailTargetList ?? contacts;
     const emails = list.map(c => c.email).filter(Boolean);
@@ -400,10 +402,7 @@ export default function OrgChart() {
       alert('Nenhum e-mail encontrado nos contatos selecionados.');
       return;
     }
-    const to = emails.join(';');
-    const subject = encodeURIComponent(emailSubject);
-    const body = encodeURIComponent(emailBody);
-    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+    openMailClient({ to: emails, subject: emailSubject, htmlBody: emailBody });
   };
 
   /* ── Root label ─────────────────────────────────────── */
@@ -508,7 +507,7 @@ export default function OrgChart() {
       {/* Modal de E-mail */}
       {showEmailModal && (
         <div className="modal-overlay" onClick={() => setShowEmailModal(false)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}>
+          <div className="modal-box modal-box-lg" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Mail size={18} style={{ color: 'var(--primary)' }} />
@@ -524,33 +523,76 @@ export default function OrgChart() {
               <button className="modal-close" onClick={() => setShowEmailModal(false)}><X size={16} /></button>
             </div>
 
-            <div className="modal-body">
-              <label className="modal-label">Assunto</label>
-              <input
-                className="modal-input"
-                value={emailSubject}
-                onChange={e => setEmailSubject(e.target.value)}
-                placeholder="Assunto do e-mail..."
-              />
-              <label className="modal-label" style={{ marginTop: 16 }}>Corpo da mensagem</label>
-              <textarea
-                className="modal-textarea"
-                value={emailBody}
-                onChange={e => setEmailBody(e.target.value)}
-                rows={7}
-                placeholder="Corpo do e-mail..."
-              />
-              <div className="modal-footer">
-                <button
-                  className="action-btn"
-                  onClick={() => { setEmailSubject(EMAIL_DEFAULT_SUBJECT); setEmailBody(EMAIL_DEFAULT_BODY); }}
-                >
-                  Restaurar padrão
-                </button>
-                <button className="action-btn email-btn" onClick={sendEmail}>
-                  <Send size={14} /> Abrir no cliente de e-mail
-                </button>
+            <div className="modal-body modal-body-split">
+              {/* Coluna esquerda: edição */}
+              <div className="email-editor-col">
+                <label className="modal-label">
+                  <LayoutTemplate size={12} style={{ verticalAlign: '-2px', marginRight: 4 }} />
+                  Modelo de e-mail
+                </label>
+                <div className="preset-pills">
+                  {EMAIL_PRESETS.map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`preset-pill${activePreset === p.id ? ' active' : ''}`}
+                      onClick={() => applyPreset(p.id)}
+                      title={`Usar modelo "${p.label}"`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                <label className="modal-label" style={{ marginTop: 16 }}>Assunto</label>
+                <input
+                  className="modal-input"
+                  value={emailSubject}
+                  onChange={e => setEmailSubject(e.target.value)}
+                  placeholder="Assunto do e-mail..."
+                />
+                <label className="modal-label" style={{ marginTop: 16 }}>
+                  Corpo do e-mail (HTML) — use <code>{'{{nome}}'}</code> para personalizar
+                </label>
+                <textarea
+                  className="modal-textarea email-textarea-lg"
+                  value={emailBody}
+                  onChange={e => setEmailBody(e.target.value)}
+                  placeholder="<p>Olá {{nome}},</p><p>Sua mensagem aqui...</p>"
+                  style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
+                />
               </div>
+
+              {/* Coluna direita: prévia */}
+              <div className="email-preview-col">
+                <label className="modal-label">Prévia (como o destinatário verá)</label>
+                <div className="email-preview-frame">
+                  <div className="email-preview-toolbar">
+                    <span className="email-preview-dot" style={{ background: '#ef4444' }} />
+                    <span className="email-preview-dot" style={{ background: '#f59e0b' }} />
+                    <span className="email-preview-dot" style={{ background: '#10b981' }} />
+                  </div>
+                  <div className="email-preview-meta">
+                    <div><strong>Assunto:</strong> {emailSubject || '(sem assunto)'}</div>
+                  </div>
+                  <div
+                    className="email-preview-html"
+                    dangerouslySetInnerHTML={{ __html: emailBody.replaceAll('{{nome}}', 'Fulano de Tal') }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ padding: '0 24px 24px' }}>
+              <button
+                className="action-btn"
+                onClick={() => applyPreset(EMAIL_PRESETS[0].id)}
+              >
+                Restaurar padrão
+              </button>
+              <button className="action-btn email-btn" onClick={sendEmail}>
+                <Send size={14} /> Abrir no cliente de e-mail
+              </button>
             </div>
           </div>
         </div>

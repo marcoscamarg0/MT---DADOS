@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Users, Building2, Mail, Phone, Edit3, CheckSquare, Square, LayoutGrid, List, Download, X, Copy, FileDown, LayoutTemplate, Check } from 'lucide-react';
+import { Search, Users, Building2, Mail, Phone, Edit3, CheckSquare, Square, LayoutGrid, List, Download, X, Copy, FileDown, LayoutTemplate, Check, Send } from 'lucide-react';
 import OrgChart from './OrgChart';
+import { EMAIL_PRESETS, openMailClient } from './emailTemplates';
 import './index.css';
 
 const API = '/api';
@@ -97,69 +98,7 @@ function ContactCard({ contact, onEdit, selected, onToggle, viewMode }) {
   );
 }
 
-/* ── Predefinições de corpo do e-mail ────────────────────── */
-const EMAIL_PRESETS = [
-  {
-    id: 'comunicado',
-    label: 'Comunicado Geral',
-    subject: 'Comunicado — Ministério dos Transportes',
-    body:
-`<p>Prezado(a) {{nome}},</p>
-<p>Encaminhamos este comunicado em nome do Ministério dos Transportes.</p>
-<p>Atenciosamente,<br>Equipe de Gestão de Pessoas — MT</p>`,
-  },
-  {
-    id: 'reuniao',
-    label: 'Convite para Reunião',
-    subject: 'Convite: Reunião — Ministério dos Transportes',
-    body:
-`<p>Prezado(a) {{nome}},</p>
-<p>Convidamos você para participar de uma reunião a ser realizada em <strong>[data]</strong>, às <strong>[hora]</strong>, em <strong>[local/link]</strong>.</p>
-<p><strong>Pauta:</strong> [descreva os principais pontos da reunião]</p>
-<p>Pedimos a gentileza de confirmar presença.</p>
-<p>Atenciosamente,<br>Equipe de Gestão de Pessoas — MT</p>`,
-  },
-  {
-    id: 'urgente',
-    label: 'Aviso Urgente',
-    subject: 'Aviso Importante — Ministério dos Transportes',
-    body:
-`<p>Prezado(a) {{nome}},</p>
-<p style="color:#b91c1c;font-weight:600;">Este é um aviso de caráter urgente.</p>
-<p>[Descreva aqui a informação ou providência necessária.]</p>
-<p>Pedimos atenção imediata a este comunicado.</p>
-<p>Atenciosamente,<br>Equipe de Gestão de Pessoas — MT</p>`,
-  },
-  {
-    id: 'boas-vindas',
-    label: 'Boas-vindas',
-    subject: 'Bem-vindo(a) ao Ministério dos Transportes',
-    body:
-`<p>Prezado(a) {{nome}},</p>
-<p>É com satisfação que damos as boas-vindas à nossa equipe.</p>
-<p>Nas próximas semanas você receberá informações sobre integração, sistemas de acesso e demais rotinas do órgão.</p>
-<p>Qualquer dúvida, nossa equipe está à disposição.</p>
-<p>Atenciosamente,<br>Equipe de Gestão de Pessoas — MT</p>`,
-  },
-  {
-    id: 'agradecimento',
-    label: 'Agradecimento',
-    subject: 'Agradecimento — Ministério dos Transportes',
-    body:
-`<p>Prezado(a) {{nome}},</p>
-<p>Gostaríamos de expressar nosso agradecimento pelo empenho e dedicação demonstrados.</p>
-<p>Seu trabalho contribui diretamente para os resultados do Ministério dos Transportes.</p>
-<p>Atenciosamente,<br>Equipe de Gestão de Pessoas — MT</p>`,
-  },
-  {
-    id: 'em-branco',
-    label: 'Em Branco',
-    subject: '',
-    body: `<p>Prezado(a) {{nome}},</p>\n<p></p>`,
-  },
-];
 
-/* ── App Principal ───────────────────────────────────────── */
 export default function App() {
   const [activeTab, setActiveTab] = useState('contacts');
   const [contacts, setContacts] = useState([]);
@@ -255,6 +194,20 @@ export default function App() {
     } catch {
       alert('Não foi possível copiar a lista de e-mails.');
     }
+  };
+
+  const sendViaMailClient = () => {
+    const emails = selectedContacts.filter(c => c.email).map(c => c.email);
+    if (emails.length === 0) {
+      alert('Nenhum destinatário com e-mail cadastrado.');
+      return;
+    }
+    openMailClient({
+      to: emails,
+      subject: emailSubject,
+      htmlBody: emailBody,
+      name: emails.length === 1 ? selectedContacts.find(c => c.email)?.nome : '',
+    });
   };
 
   const downloadEmailHtml = () => {
@@ -550,9 +503,12 @@ ${emailBody}
               <button className="action-btn" onClick={downloadEmailHtml}>
                 <FileDown size={14} /> Baixar .html
               </button>
-              <button className="action-btn email-btn" onClick={copyHtmlToClipboard}>
+              <button className="action-btn" onClick={copyHtmlToClipboard}>
                 {copyStatus === 'html' ? <Check size={14} /> : <Copy size={14} />}
                 {copyStatus === 'html' ? ' HTML copiado!' : ' Copiar HTML'}
+              </button>
+              <button className="action-btn email-btn" onClick={sendViaMailClient} title="Abre seu aplicativo de e-mail padrão com a mensagem pronta">
+                <Send size={14} /> Abrir no cliente de e-mail
               </button>
             </div>
           </div>

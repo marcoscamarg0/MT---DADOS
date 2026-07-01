@@ -524,8 +524,7 @@ html, body, #root {
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 0;
-  min-width: 168px;
-  max-width: 210px;
+  width: 190px;
   display: inline-block;
   text-align: left;
   position: relative;
@@ -533,6 +532,7 @@ html, body, #root {
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,0.35);
   transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+  vertical-align: top;
 }
 .org-modern-card:hover {
   box-shadow: 0 14px 40px rgba(0,0,0,0.55);
@@ -547,12 +547,14 @@ html, body, #root {
 
 .org-card-body {
   padding: 12px 14px 14px;
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Root card */
 .org-modern-card.root-card {
-  min-width: 200px;
-  max-width: 240px;
+  width: 220px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
 }
 .org-modern-card.root-card .org-card-stripe { height: 5px; }
@@ -590,13 +592,18 @@ html, body, #root {
   border: 1px solid var(--border);
 }
 
-/* Title & subtitle */
+/* Title & subtitle — truncado com reticências pra nunca deformar o card */
 .card-title {
   font-size: 0.8rem;
   font-weight: 700;
   color: var(--text);
   margin: 0 0 3px 0;
   line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
 }
 .card-subtitle {
   font-size: 0.65rem;
@@ -605,6 +612,9 @@ html, body, #root {
   margin: 0;
   text-transform: capitalize;
   letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Expand toggle */
@@ -865,8 +875,11 @@ html, body, #root {
   border-radius: 18px;
   width: 100%;
   max-width: 520px;
+  max-height: 88vh;
   box-shadow: 0 24px 60px rgba(0,0,0,0.6);
   animation: slideUp 0.2s cubic-bezier(0.4,0,0.2,1);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -882,6 +895,7 @@ html, body, #root {
   padding: 20px 24px;
   border-bottom: 1px solid var(--border-light);
   background: var(--bg-elevated);
+  flex-shrink: 0;
 }
 
 .modal-close {
@@ -903,6 +917,9 @@ html, body, #root {
   padding: 24px;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .modal-label {
@@ -960,6 +977,7 @@ html, body, #root {
   padding-top: 16px;
   border-top: 1px solid var(--border-light);
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1021,6 +1039,7 @@ html, body, #root {
 .email-textarea-lg {
   flex: 1;
   min-height: 320px;
+  max-height: 55vh;
   resize: vertical;
 }
 
@@ -1032,6 +1051,7 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   min-height: 420px;
+  max-height: 55vh;
   box-shadow: 0 8px 24px rgba(0,0,0,0.25);
 }
 
@@ -1064,5 +1084,5 @@ html, body, #root {
   line-height: 1.6;
   overflow: auto;
   flex: 1;
-  min-height: 340px;
+  min-height: 0;
 }
