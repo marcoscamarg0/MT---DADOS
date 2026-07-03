@@ -5,7 +5,7 @@ import { EMAIL_PRESETS, openMailClient } from './emailTemplates';
 import './index.css';
 
 const API = '/api';
-const ORG_STORAGE_KEY = 'mt-orgchart-data-v1';
+const ORG_STORAGE_KEY = 'mt-orgchart-data-v2';
 
 /* ═══════════════════════════════════════════════════════════
    ESTRUTURA ORGANIZACIONAL (Decreto nº 11.360/2023 e atualizações)
@@ -13,7 +13,7 @@ const ORG_STORAGE_KEY = 'mt-orgchart-data-v1';
    setor faz, além dos campos usados no layout/tema (tipo) e no
    cruzamento com a lista de contatos (deptKey).
    ═══════════════════════════════════════════════════════════ */
-const DEFAULT_ORG_TREE = {
+export const DEFAULT_ORG_TREE = {
   id: 'MINISTRO', sigla: 'MINISTRO', nome: 'Ministro de Estado', tipo: 'ministerio',
   deptKey: 'Gabinete do Ministro - GM',
   resumo: 'Autoridade máxima do Ministério dos Transportes, responsável pela política nacional de transportes ferroviário e rodoviário e pela política nacional de trânsito.',
@@ -40,23 +40,48 @@ const DEFAULT_ORG_TREE = {
         'Propor, acompanhar e implementar políticas de fomento ao transporte intermodal e multimodal.',
       ],
       filhos: [
-        { id: 'SUST', sigla: 'SUST', nome: 'Subsecretaria de Sustentabilidade', tipo: 'subsecretaria', deptKey: 'Subsecretaria de Sustentabilidade - SUST', filhos: [],
+        { id: 'SUST', sigla: 'SUST', nome: 'Subsecretaria de Sustentabilidade', tipo: 'subsecretaria', deptKey: 'Subsecretaria de Sustentabilidade - SUST',
           resumo: 'Coordena a transição ecológica e as questões socioambientais dos empreendimentos de infraestrutura do Ministério.',
           competencias: [
             'Coordenar a implementação de diretrizes de transição ecológica nas obras e outorgas do Ministério.',
             'Coordenar e monitorar o equacionamento de questões socioambientais dos empreendimentos de infraestrutura.',
             'Representar o Ministério junto a órgãos ambientais e em fóruns e colegiados relacionados ao tema.',
             'Padronizar procedimentos de utilidade pública, remoção de interferências e desapropriação para obras.',
+          ],
+          filhos: [
+            { id: 'CGSA', sigla: 'CGSA', nome: 'Coordenação-Geral Socioambiental', tipo: 'coordenacao', deptKey: 'CGSA/SUST - Socioambiental', filhos: [],
+              resumo: 'Coordena as questões socioambientais dos empreendimentos de infraestrutura de transportes.',
+              competencias: [
+                'Coordenar procedimentos de licenciamento ambiental dos empreendimentos rodoviários e ferroviários.',
+                'Monitorar o atendimento das condicionantes ambientais das licenças emitidas pelo Ibama.',
+                'Articular-se com entidades ambientais, povos e comunidades tradicionais afetadas por obras.',
+              ] },
+            { id: 'CGUT', sigla: 'CGUT', nome: 'Coordenação-Geral de Utilidade Pública e Desapropriação', tipo: 'coordenacao', deptKey: 'CGUT/SUST - Utilidade Pública', filhos: [],
+              resumo: 'Gerencia os processos de declaração de utilidade pública, remoção de interferências e desapropriação.',
+              competencias: [
+                'Instruir e acompanhar processos de declaração de utilidade pública para obras de infraestrutura.',
+                'Coordenar procedimentos de remoção de interferências e relocação de concessionárias de serviços públicos.',
+                'Supervisionar processos de desapropriação necessários à execução de obras de transportes.',
+              ] },
           ] },
-        { id: 'SPAR', sigla: 'SPAR', nome: 'Subsecretaria de Parcerias', tipo: 'subsecretaria', deptKey: 'Subsecretaria de Parcerias - SPAR', filhos: [],
+        { id: 'SPAR', sigla: 'SPAR', nome: 'Subsecretaria de Parcerias', tipo: 'subsecretaria', deptKey: 'Subsecretaria de Parcerias - SPAR',
           resumo: 'Avalia planos de outorga e assessora concessões, autorizações, desestatizações e parcerias com a iniciativa privada.',
           competencias: [
             'Avaliar os planos de outorga setoriais quanto à aderência à política nacional de transportes.',
             'Coordenar entre as Secretarias os temas de parceria e articular-se com órgãos públicos e a sociedade civil.',
             'Assistir tecnicamente o Ministro em matérias de concessões, autorizações e desestatizações.',
             'Assessorar instrumentos de parceria com a iniciativa privada e reorganizações institucionais de entidades vinculadas.',
+          ],
+          filhos: [
+            { id: 'CGPRI', sigla: 'CGPRI', nome: 'Coordenação-Geral de Parcerias e Instrumentos', tipo: 'coordenacao', deptKey: 'CGPRI/SPAR - Parcerias', filhos: [],
+              resumo: 'Analisa e acompanha os instrumentos de concessão, autorização e parceria com a iniciativa privada.',
+              competencias: [
+                'Analisar minutas de contratos de concessão, autorização e parceria público-privada.',
+                'Monitorar o desempenho das parcerias vigentes no setor de transportes.',
+                'Apoiar processos de desestatização e reorganização de entidades vinculadas ao Ministério.',
+              ] },
           ] },
-        { id: 'SFPLAN', sigla: 'SFPLAN', nome: 'Subsecretaria de Fomento e Planejamento', tipo: 'subsecretaria', deptKey: 'Subsecretaria de Fomento e Planejamento - SFPLAN', filhos: [],
+        { id: 'SFPLAN', sigla: 'SFPLAN', nome: 'Subsecretaria de Fomento e Planejamento', tipo: 'subsecretaria', deptKey: 'Subsecretaria de Fomento e Planejamento - SFPLAN',
           resumo: 'Formula a política nacional de transportes ferroviário e rodoviário e coordena o planejamento e o fomento do setor.',
           competencias: [
             'Formular, monitorar e avaliar a política nacional de transportes ferroviário e rodoviário.',
@@ -64,8 +89,24 @@ const DEFAULT_ORG_TREE = {
             'Coordenar a implementação e atualização do Sistema Nacional de Viação.',
             'Identificar fontes de recursos e coordenar a captação de financiamento nacional e internacional.',
             'Elaborar, atualizar e monitorar o planejamento nacional de transportes ferroviário e rodoviário.',
+          ],
+          filhos: [
+            { id: 'CGPL', sigla: 'CGPL', nome: 'Coordenação-Geral de Planejamento', tipo: 'coordenacao', deptKey: 'CGPL/SFPLAN - Planejamento', filhos: [],
+              resumo: 'Elabora e monitora o planejamento de médio e longo prazo da infraestrutura de transportes.',
+              competencias: [
+                'Elaborar e atualizar o Plano Nacional de Logística (PNL) e o Plano Nacional de Viação (PNV).',
+                'Analisar e consolidar demandas de investimento em infraestrutura de transportes.',
+                'Coordenar estudos de viabilidade de projetos de transporte ferroviário e rodoviário.',
+              ] },
+            { id: 'CGFO', sigla: 'CGFO', nome: 'Coordenação-Geral de Fomento', tipo: 'coordenacao', deptKey: 'CGFO/SFPLAN - Fomento', filhos: [],
+              resumo: 'Identifica fontes de financiamento e articula o fomento ao setor de transportes.',
+              competencias: [
+                'Identificar e mobilizar fontes de recursos nacionais e internacionais para infraestrutura.',
+                'Articular operações de crédito e cooperação técnica com organismos multilaterais.',
+                'Acompanhar a execução de programas de fomento ao transporte de cargas e passageiros.',
+              ] },
           ] },
-        { id: 'SPOA', sigla: 'SPOA', nome: 'Subsecretaria de Planejamento, Orçamento e Administração', tipo: 'subsecretaria', deptKey: 'SPOA - Planejamento, Orçamento e Administração', filhos: [],
+        { id: 'SPOA', sigla: 'SPOA', nome: 'Subsecretaria de Planejamento, Orçamento e Administração', tipo: 'subsecretaria', deptKey: 'SPOA - Planejamento, Orçamento e Administração',
           resumo: 'Responsável pelo orçamento, finanças, contabilidade, pessoal, patrimônio e arquivos do Ministério.',
           competencias: [
             'Planejar e supervisionar a execução orçamentária, financeira e contábil do Ministério.',
@@ -73,14 +114,53 @@ const DEFAULT_ORG_TREE = {
             'Coordenar organização institucional, pessoal civil, serviços gerais e gestão de documentos e arquivos.',
             'Realizar tomadas de contas de responsáveis por bens e valores públicos.',
             'Liquidar e executar despesas da Lei Orçamentária Anual, restos a pagar e despesas de pessoal.',
+          ],
+          filhos: [
+            { id: 'CGOF', sigla: 'CGOF', nome: 'Coordenação-Geral de Orçamento e Finanças', tipo: 'coordenacao', deptKey: 'CGOF/SPOA - Orçamento e Finanças', filhos: [],
+              resumo: 'Responsável pela execução orçamentária, financeira e contábil do Ministério.',
+              competencias: [
+                'Elaborar e acompanhar a proposta orçamentária anual e plurianual do Ministério.',
+                'Executar e controlar as despesas de custeio e investimento do Ministério.',
+                'Coordenar o fechamento contábil e a prestação de contas junto ao TCU e CGU.',
+              ] },
+            { id: 'CGRH', sigla: 'CGRH', nome: 'Coordenação-Geral de Recursos Humanos', tipo: 'coordenacao', deptKey: 'CGRH/SPOA - Recursos Humanos', filhos: [],
+              resumo: 'Gerencia a vida funcional dos servidores do Ministério dos Transportes.',
+              competencias: [
+                'Controlar e processar a folha de pagamento dos servidores ativos, inativos e pensionistas.',
+                'Gerir provimento, vacância, progressão funcional e aposentadorias.',
+                'Planejar e executar ações de capacitação e desenvolvimento de pessoal.',
+              ] },
+            { id: 'CGLOG', sigla: 'CGLOG', nome: 'Coordenação-Geral de Logística e Patrimônio', tipo: 'coordenacao', deptKey: 'CGLOG/SPOA - Logística', filhos: [],
+              resumo: 'Responsável pela gestão de patrimônio, contratos de serviços e licitações do Ministério.',
+              competencias: [
+                'Planejar e realizar licitações e contratos de serviços e fornecimentos para o Ministério.',
+                'Gerir o patrimônio mobiliário e imóveis funcionais do Ministério.',
+                'Coordenar a gestão do espaço físico, frota e serviços gerais da Sede.',
+              ] },
           ] },
-        { id: 'SGETI', sigla: 'SGETI', nome: 'Subsecretaria de Gestão Estratégica, Tecnologia e Inovação', tipo: 'subsecretaria', deptKey: 'SGETI - Gestão Estratégica, Tecnologia e Inovação', filhos: [],
+        { id: 'SGETI', sigla: 'SGETI', nome: 'Subsecretaria de Gestão Estratégica, Tecnologia e Inovação', tipo: 'subsecretaria', deptKey: 'SGETI - Gestão Estratégica, Tecnologia e Inovação',
           resumo: 'Conduz a gestão estratégica, a transformação digital e a governança de tecnologia da informação do Ministério.',
           competencias: [
             'Elaborar, monitorar e avaliar a gestão e o planejamento estratégico do Ministério.',
             'Coordenar ações de geração de valor e eficiência, alinhando Secretarias e entidades vinculadas ao plano estratégico.',
             'Definir programas de simplificação, inovação, otimização de gastos e melhoria de produtividade.',
             'Definir diretrizes e coordenar projetos de transformação digital dos serviços públicos do Ministério.',
+          ],
+          filhos: [
+            { id: 'CGTI', sigla: 'CGTI', nome: 'Coordenação-Geral de Tecnologia da Informação', tipo: 'coordenacao', deptKey: 'CGTI/SGETI - Tecnologia da Informação', filhos: [],
+              resumo: 'Planeja e executa a infraestrutura de TI e os sistemas de informação do Ministério.',
+              competencias: [
+                'Planejar e gerir a infraestrutura tecnológica e de comunicações do Ministério.',
+                'Desenvolver, implantar e manter os sistemas de informação institucionais.',
+                'Zelar pela segurança da informação e proteção de dados pessoais do Ministério (LGPD).',
+              ] },
+            { id: 'CGGE', sigla: 'CGGE', nome: 'Coordenação-Geral de Gestão Estratégica', tipo: 'coordenacao', deptKey: 'CGGE/SGETI - Gestão Estratégica', filhos: [],
+              resumo: 'Coordena o planejamento estratégico, a inovação e a melhoria de processos no Ministério.',
+              competencias: [
+                'Elaborar e monitorar o Plano Estratégico Institucional do Ministério.',
+                'Coordenar projetos de inovação, simplificação e transformação digital.',
+                'Promover a cultura de gestão por resultados e indicadores de desempenho.',
+              ] },
           ] },
         { id: 'CONJUR', sigla: 'CONJUR', nome: 'Consultoria Jurídica', tipo: 'consultoria', deptKey: 'Consultoria Jurídica - CONJUR', filhos: [],
           resumo: 'Órgão setorial da Advocacia-Geral da União responsável pela assessoria jurídica do Ministério.',
@@ -192,20 +272,45 @@ const DEFAULT_ORG_TREE = {
         'Propor planos de investimento, outorgas e convênios de delegação a Estados, Distrito Federal e Municípios.',
       ],
       filhos: [
-        { id: 'DOP_SNTR', sigla: 'DOP', nome: 'Departamento de Obras Públicas', tipo: 'departamento', deptKey: 'DOP/SNTR - Obras Públicas', filhos: [],
+        { id: 'DOP_SNTR', sigla: 'DOP', nome: 'Departamento de Obras Públicas', tipo: 'departamento', deptKey: 'DOP/SNTR - Obras Públicas',
           resumo: 'Subsidia o planejamento e o monitoramento das obras públicas de infraestrutura rodoviária.',
           competencias: [
             'Subsidiar programas, investimentos e carteira de projetos do setor de transporte rodoviário.',
             'Monitorar os principais empreendimentos rodoviários sob responsabilidade direta do DNIT.',
             'Cooperar com processos de desapropriação necessários às obras de infraestrutura rodoviária.',
             'Acompanhar a gestão do patrimônio do setor de transporte rodoviário.',
+          ],
+          filhos: [
+            { id: 'CGEM_SNTR', sigla: 'CGEM', nome: 'Coordenação-Geral de Empreendimentos Rodoviários', tipo: 'coordenacao', deptKey: 'CGEM/DOP/SNTR - Empreendimentos Rodoviários', filhos: [],
+              resumo: 'Acompanha e monitora os empreendimentos e obras de infraestrutura rodoviária federal.',
+              competencias: [
+                'Monitorar o andamento físico e financeiro das obras rodoviárias sob responsabilidade do DNIT.',
+                'Elaborar relatórios gerenciais de acompanhamento de empreendimentos rodoviários.',
+                'Apoiar a priorização da carteira de projetos de infraestrutura rodoviária.',
+              ] },
+            { id: 'CGPER_SNTR', sigla: 'CGPER', nome: 'Coordenação-Geral de Projetos e Estudos Rodoviários', tipo: 'coordenacao', deptKey: 'CGPER/DOP/SNTR - Projetos Rodoviários', filhos: [],
+              resumo: 'Analisa e acompanha projetos de engenharia e estudos de viabilidade de rodovias federais.',
+              competencias: [
+                'Analisar projetos básicos e executivos de obras rodoviárias federais.',
+                'Coordenar estudos de viabilidade técnica e econômica de novos empreendimentos rodoviários.',
+                'Acompanhar processos de licença ambiental de obras rodoviárias.',
+              ] },
           ] },
-        { id: 'DOUT_SNTR', sigla: 'DOUT', nome: 'Departamento de Outorgas Rodoviárias', tipo: 'departamento', deptKey: 'DOUT/SNTR - Outorgas Rodoviárias', filhos: [],
+        { id: 'DOUT_SNTR', sigla: 'DOUT', nome: 'Departamento de Outorgas Rodoviárias', tipo: 'departamento', deptKey: 'DOUT/SNTR - Outorgas Rodoviárias',
           resumo: 'Conduz os estudos técnicos, econômicos e regulatórios das outorgas do setor rodoviário.',
           competencias: [
             'Propor e acompanhar estudos técnicos e econômicos sobre outorgas rodoviárias.',
             'Acompanhar aspectos regulatórios e analisar projetos de concessão, permissão e autorização.',
             'Avaliar condições para convênios de delegação a entes federativos, empresas estatais e parcerias privadas.',
+          ],
+          filhos: [
+            { id: 'CGOUR', sigla: 'CGOUR', nome: 'Coordenação-Geral de Outorgas Rodoviárias', tipo: 'coordenacao', deptKey: 'CGOUR/DOUT/SNTR - Outorgas Rodoviárias', filhos: [],
+              resumo: 'Instrui e acompanha os processos de outorga do setor de transporte rodoviário.',
+              competencias: [
+                'Elaborar estudos técnicos para concessões, permissões e autorizações rodoviárias.',
+                'Acompanhar licitações e processos de outorga de rodovias federais.',
+                'Analisar reequilíbrios econômico-financeiros e alterações contratuais de concessões rodoviárias.',
+              ] },
           ] },
       ]
     },
@@ -220,19 +325,44 @@ const DEFAULT_ORG_TREE = {
         'Propor planos de investimento, outorgas e convênios de delegação a Estados, Distrito Federal e Municípios.',
       ],
       filhos: [
-        { id: 'DOP_SNTF', sigla: 'DOP', nome: 'Departamento de Obras e Projetos', tipo: 'departamento', deptKey: 'DOP/SNTF - Obras e Projetos Ferroviários', filhos: [],
+        { id: 'DOP_SNTF', sigla: 'DOP', nome: 'Departamento de Obras e Projetos', tipo: 'departamento', deptKey: 'DOP/SNTF - Obras e Projetos Ferroviários',
           resumo: 'Subsidia o planejamento e o monitoramento das obras públicas de infraestrutura ferroviária.',
           competencias: [
             'Subsidiar programas, investimentos e carteira de projetos do setor de transporte ferroviário.',
             'Monitorar os principais empreendimentos ferroviários sob responsabilidade da Infra S.A. e do DNIT.',
             'Cooperar com processos de desapropriação necessários às obras de infraestrutura ferroviária.',
+          ],
+          filhos: [
+            { id: 'CGEF', sigla: 'CGEF', nome: 'Coordenação-Geral de Empreendimentos Ferroviários', tipo: 'coordenacao', deptKey: 'CGEF/DOP/SNTF - Empreendimentos Ferroviários', filhos: [],
+              resumo: 'Acompanha e monitora os empreendimentos e obras de infraestrutura ferroviária.',
+              competencias: [
+                'Monitorar o andamento físico e financeiro das obras ferroviárias sob responsabilidade da INFRA S.A.',
+                'Elaborar relatórios gerenciais de acompanhamento de empreendimentos ferroviários.',
+                'Apoiar a priorização da carteira de projetos de infraestrutura ferroviária nacional.',
+              ] },
+            { id: 'CGPF', sigla: 'CGPF', nome: 'Coordenação-Geral de Projetos Ferroviários', tipo: 'coordenacao', deptKey: 'CGPF/DOP/SNTF - Projetos Ferroviários', filhos: [],
+              resumo: 'Analisa e acompanha projetos de engenharia e estudos de viabilidade de ferrovias.',
+              competencias: [
+                'Analisar projetos básicos e executivos de obras ferroviárias federais.',
+                'Coordenar estudos de viabilidade técnica e econômica de novos corredores ferroviários.',
+                'Acompanhar processos de licença ambiental de obras ferroviárias.',
+              ] },
           ] },
-        { id: 'DOUT_SNTF', sigla: 'DOUT', nome: 'Departamento de Outorgas Ferroviárias', tipo: 'departamento', deptKey: 'DOUT/SNTF - Outorgas Ferroviárias', filhos: [],
+        { id: 'DOUT_SNTF', sigla: 'DOUT', nome: 'Departamento de Outorgas Ferroviárias', tipo: 'departamento', deptKey: 'DOUT/SNTF - Outorgas Ferroviárias',
           resumo: 'Conduz os estudos técnicos, econômicos e regulatórios das outorgas do setor ferroviário.',
           competencias: [
             'Propor e acompanhar estudos técnicos e econômicos sobre outorgas ferroviárias.',
             'Acompanhar aspectos regulatórios e analisar projetos de concessão, permissão e autorização.',
             'Avaliar condições para convênios de delegação a entes federativos, empresas estatais e parcerias privadas.',
+          ],
+          filhos: [
+            { id: 'CGOUFERRO', sigla: 'CGOUFERRO', nome: 'Coordenação-Geral de Outorgas Ferroviárias', tipo: 'coordenacao', deptKey: 'CGOUFERRO/DOUT/SNTF - Outorgas Ferroviárias', filhos: [],
+              resumo: 'Instrui e acompanha os processos de outorga do setor de transporte ferroviário.',
+              competencias: [
+                'Elaborar estudos técnicos para concessões, autorizações e contratos de uso de infraestrutura ferroviária.',
+                'Acompanhar licitações e processos de outorga ferroviária, incluindo ferrovias autorizadas (ANTT).',
+                'Analisar reequilíbrios econômico-financeiros e alterações contratuais de concessões ferroviárias.',
+              ] },
           ] },
       ]
     },
@@ -246,21 +376,53 @@ const DEFAULT_ORG_TREE = {
         'Presidir e articular as câmaras temáticas e as reuniões preparatórias do Conselho Nacional de Trânsito (Contran).',
       ],
       filhos: [
-        { id: 'DSEG', sigla: 'DSEG', nome: 'Departamento de Segurança no Trânsito', tipo: 'departamento', deptKey: 'DSEG/SENATRAN - Segurança no Trânsito', filhos: [],
+        { id: 'DSEG', sigla: 'DSEG', nome: 'Departamento de Segurança no Trânsito', tipo: 'departamento', deptKey: 'DSEG/SENATRAN - Segurança no Trânsito',
           resumo: 'Cuida da segurança veicular, engenharia de tráfego, sinalização, educação e saúde no trânsito.',
           competencias: [
             'Planejar e coordenar ações de segurança, educação e saúde para o trânsito.',
             'Propor normas de padronização de segurança veicular e de homologação de veículos.',
             'Elaborar e atualizar manuais de sinalização e dispositivos de controle de trânsito aprovados pelo Contran.',
             'Planejar e divulgar políticas de educação e saúde para o trânsito, em articulação com Educação e Saúde.',
+          ],
+          filhos: [
+            { id: 'CGSV', sigla: 'CGSV', nome: 'Coordenação-Geral de Segurança Veicular', tipo: 'coordenacao', deptKey: 'CGSV/DSEG - Segurança Veicular', filhos: [],
+              resumo: 'Trata da homologação, padronização e fiscalização de requisitos técnicos de segurança veicular.',
+              competencias: [
+                'Elaborar normas técnicas de segurança para veículos automotores e componentes.',
+                'Acompanhar processos de homologação e recall de veículos junto ao Denatran/ANTT.',
+                'Propor atualizações ao Código de Trânsito Brasileiro sobre segurança veicular.',
+              ] },
+            { id: 'CGED', sigla: 'CGED', nome: 'Coordenação-Geral de Educação e Saúde no Trânsito', tipo: 'coordenacao', deptKey: 'CGED/DSEG - Educação no Trânsito', filhos: [],
+              resumo: 'Planeja e coordena programas de educação para o trânsito e campanhas de conscientização.',
+              competencias: [
+                'Elaborar e coordenar campanhas nacionais de educação e consciência para o trânsito.',
+                'Articular com Educação e Saúde programas de formação de condutores e pedestres.',
+                'Monitorar indicadores de acidentes e propor políticas de redução de mortes no trânsito.',
+              ] },
           ] },
-        { id: 'DRFG', sigla: 'DRFG', nome: 'Departamento de Regulação, Fiscalização e Gestão', tipo: 'departamento', deptKey: 'DRFG/SENATRAN - Regulação, Fiscalização e Gestão', filhos: [],
+        { id: 'DRFG', sigla: 'DRFG', nome: 'Departamento de Regulação, Fiscalização e Gestão', tipo: 'departamento', deptKey: 'DRFG/SENATRAN - Regulação, Fiscalização e Gestão',
           resumo: 'Regula, fiscaliza e administra os sistemas informatizados e os recursos financeiros do Sistema Nacional de Trânsito.',
           competencias: [
             'Coordenar a integração dos órgãos do Sistema Nacional de Trânsito e apoiar a fiscalização do cumprimento das normas.',
             'Administrar os sistemas informatizados de registro de veículos e condutores (Renavam, CRLV e CNH).',
             'Administrar o Fundo Nacional de Segurança e Educação de Trânsito (Funset) e a cota-parte do seguro DPVAT.',
             'Coordenar a arrecadação e o repasse de multas de trânsito e fiscalizar a aplicação dos recursos repassados.',
+          ],
+          filhos: [
+            { id: 'CGRF', sigla: 'CGRF', nome: 'Coordenação-Geral de Regulação e Fiscalização', tipo: 'coordenacao', deptKey: 'CGRF/DRFG - Regulação e Fiscalização', filhos: [],
+              resumo: 'Regulamenta e fiscaliza o cumprimento das normas de trânsito pelos órgãos do SNT.',
+              competencias: [
+                'Elaborar normas regulamentadoras do Código de Trânsito Brasileiro.',
+                'Fiscalizar o cumprimento das normas de trânsito pelos órgãos municipais e estaduais.',
+                'Coordenar auditorias e inspeções nos sistemas de registro e habilitação de condutores.',
+              ] },
+            { id: 'CGSIT', sigla: 'CGSIT', nome: 'Coordenação-Geral de Sistemas e Tecnologia', tipo: 'coordenacao', deptKey: 'CGSIT/DRFG - Sistemas de Trânsito', filhos: [],
+              resumo: 'Administra os sistemas informatizados nacionais de trânsito (Renavam, CNH, CRLV).',
+              competencias: [
+                'Gerir e evoluir o Sistema Nacional de Registro de Veículos Automotores (Renavam).',
+                'Administrar o Sistema Nacional de Habilitação (SNH) e o Registro Nacional de Condutores Habilitados (Renach).',
+                'Garantir a integridade, disponibilidade e segurança dos dados dos sistemas de trânsito.',
+              ] },
           ] },
       ]
     },
@@ -313,7 +475,7 @@ const DEFAULT_ORG_TREE = {
 };
 
 /* ── Categorias (para filtros) derivadas do "tipo" de cada nó ── */
-const TIPO_TO_CATEGORIA = {
+export const TIPO_TO_CATEGORIA = {
   ministerio: 'topo',
   gabinete: 'assistencia', assessoria: 'assistencia', coordenacao: 'assistencia', consultoria: 'assistencia',
   secretaria: 'executiva', subsecretaria: 'executiva',
@@ -322,7 +484,7 @@ const TIPO_TO_CATEGORIA = {
   colegiado: 'colegiados',
   vinculada: 'entidades',
 };
-const CATEGORIAS = [
+export const CATEGORIAS = [
   { id: 'todos', label: 'Todos' },
   { id: 'assistencia', label: 'Assistência Direta' },
   { id: 'executiva', label: 'Secretaria-Executiva' },
@@ -331,7 +493,7 @@ const CATEGORIAS = [
   { id: 'colegiados', label: 'Órgãos Colegiados' },
   { id: 'entidades', label: 'Entidades Vinculadas' },
 ];
-const TIPO_LABELS = {
+export const TIPO_LABELS = {
   ministerio: 'Ministro', secretaria: 'Secretaria-Executiva', gabinete: 'Gabinete',
   subsecretaria: 'Subsecretaria', assessoria: 'Assessoria', coordenacao: 'Coordenação',
   consultoria: 'Consultoria/Órgão de controle', 'secretaria-nacional': 'Secretaria Nacional',
@@ -340,20 +502,20 @@ const TIPO_LABELS = {
 
 /* ── Conversão árvore aninhada (filhos[]) <-> lista plana (parentId) ──
    Trabalhar em formato plano facilita edição (mover, excluir, adicionar). */
-function treeToFlat(node, parentId = null, out = []) {
+export function treeToFlat(node, parentId = null, out = []) {
   const { filhos, ...rest } = node;
   out.push({ ...rest, parentId });
   (filhos || []).forEach(c => treeToFlat(c, node.id, out));
   return out;
 }
-function flatToTree(flat, rootId = 'MINISTRO') {
+export function flatToTree(flat, rootId = 'MINISTRO') {
   const byId = Object.fromEntries(flat.map(n => [n.id, { ...n, filhos: [] }]));
   flat.forEach(n => {
     if (n.parentId && byId[n.parentId]) byId[n.parentId].filhos.push(byId[n.id]);
   });
   return byId[rootId];
 }
-function descendantsOf(flat, id) {
+export function descendantsOf(flat, id) {
   const out = [];
   const stack = [id];
   while (stack.length) {
@@ -362,26 +524,26 @@ function descendantsOf(flat, id) {
   }
   return out;
 }
-function ancestorsOf(flat, id) {
+export function ancestorsOf(flat, id) {
   const out = [];
   const byId = Object.fromEntries(flat.map(n => [n.id, n]));
   let cur = byId[id];
   while (cur && cur.parentId) { out.push(cur.parentId); cur = byId[cur.parentId]; }
   return out;
 }
-function loadOrgFlat() {
+export function loadOrgFlat() {
   try {
     const raw = localStorage.getItem(ORG_STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch { /* ignora e usa o padrão */ }
   return treeToFlat(DEFAULT_ORG_TREE);
 }
-function saveOrgFlat(flat) {
+export function saveOrgFlat(flat) {
   try { localStorage.setItem(ORG_STORAGE_KEY, JSON.stringify(flat)); return true; }
   catch { return false; }
 }
 
-const THEME = {
+export const THEME = {
   ministerio: { color: '#e2e8f0', stripe: 'linear-gradient(90deg,#1e3a5f,#0f2d5a)', border: 'rgba(100,140,200,0.5)', badgeBg: 'rgba(30,58,95,0.8)' },
   secretaria: { color: '#93c5fd', stripe: 'linear-gradient(90deg,#1d4ed8,#1e40af)', border: 'rgba(59,130,246,0.5)', badgeBg: 'rgba(29,78,216,0.3)' },
   gabinete: { color: '#93c5fd', stripe: 'linear-gradient(90deg,#1d4ed8,#1e40af)', border: 'rgba(59,130,246,0.5)', badgeBg: 'rgba(29,78,216,0.3)' },
@@ -507,7 +669,7 @@ function OrgNode({ node, allContacts, defaultExpanded, onSelectNode, visibleIds,
    ═══════════════════════════════════════════════════════════ */
 function SectorPanel({
   node, contacts, onClose, onEmail,
-  editMode, allNodesFlat, onSave, onDelete, onAddChild, isRoot, startInEdit,
+  editMode, allNodesFlat, onSave, onDelete, onAddChild, isRoot, startInEdit, onSelectNode, onNavigateToDept,
 }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(null);
@@ -544,6 +706,14 @@ function SectorPanel({
     });
     setEditing(false);
   };
+
+  const parentIds = ancestorsOf(allNodesFlat || [], node.id);
+  const parentNodes = parentIds
+    .map(id => allNodesFlat.find(n => n.id === id))
+    .filter(Boolean)
+    .reverse();
+
+  const childNodes = (allNodesFlat || []).filter(n => n.parentId === node.id);
 
   if (editing && form) {
     const forbidden = new Set([node.id, ...descendantsOf(allNodesFlat || [], node.id)]);
@@ -639,7 +809,68 @@ function SectorPanel({
       </div>
 
       <div className="ocp-list">
+        {/* Caminho da Hierarquia */}
+        {parentNodes.length > 0 && (
+          <div className="sector-breadcrumbs">
+            {parentNodes.map((pn, index) => (
+              <span key={pn.id}>
+                <button
+                  type="button"
+                  className="breadcrumb-link"
+                  onClick={() => onSelectNode(pn)}
+                >
+                  {pn.sigla || pn.nome}
+                </button>
+                <span className="breadcrumb-separator">/</span>
+              </span>
+            ))}
+            <span className="breadcrumb-current">{node.sigla || node.nome}</span>
+          </div>
+        )}
+
+        {/* Ação: Ver no Diretório */}
+        {onNavigateToDept && node.deptKey && (
+          <button
+            className="action-btn sic-navigate-btn"
+            onClick={() => onNavigateToDept(node.deptKey)}
+            title="Abrir este setor no Diretório de Contatos"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center', marginBottom: 12, padding: '8px 12px' }}
+          >
+            <Users size={13} /> Ver no Diretório →
+          </button>
+        )}
+
         {node.resumo && <p className="sector-resumo">{node.resumo}</p>}
+
+        {/* Subsetores / Coordenações Vinculadas */}
+        {childNodes.length > 0 && (
+          <div className="sector-subsections-container" style={{ margin: '0 4px 18px' }}>
+            <div className="sector-section-label" style={{ margin: '0 0 10px' }}>
+              <Network size={12} /> Subsetores & Coordenações ({childNodes.length})
+            </div>
+            <div className="sector-subnodes-list">
+              {childNodes.map(cn => {
+                const cnTheme = THEME[cn.tipo] || THEME.assessoria;
+                return (
+                  <button
+                    key={cn.id}
+                    type="button"
+                    className="sector-subnode-item"
+                    style={{ borderLeft: `3px solid ${cnTheme.color}` }}
+                    onClick={() => onSelectNode(cn)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <span className="subnode-name" style={{ fontWeight: 600, fontSize: '0.78rem' }}>{cn.nome}</span>
+                      <span className="badge" style={{ backgroundColor: cnTheme.badgeBg, color: cnTheme.color, borderColor: cnTheme.border, fontSize: '0.58rem', padding: '2px 6px', marginLeft: 8 }}>
+                        {cn.sigla || TIPO_LABELS[cn.tipo]}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {node.competencias && node.competencias.length > 0 && (
           <>
@@ -719,7 +950,7 @@ function clampPan(x, y, scale, canvasEl) {
 /* ═══════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
    ═══════════════════════════════════════════════════════════ */
-export default function OrgChart() {
+export default function OrgChart({ onNavigateToDept }) {
   const [contacts, setContacts] = useState([]);
   const [search, setSearch] = useState('');
   const [rootExpanded, setRootExpanded] = useState(true);
@@ -922,9 +1153,10 @@ export default function OrgChart() {
     setTransform({ scale: 0.75, ...clamped });
   };
 
-  const handleSelectNode = (node, contactList) => {
+  const handleSelectNode = (node, customContactList = null) => {
     setAutoEditId(null);
-    setSelectedNode({ node, contacts: contactList });
+    const list = customContactList || (node.deptKey ? displayContacts.filter(c => c.departamento === node.deptKey) : []);
+    setSelectedNode({ node, contacts: list });
   };
 
   /* ── E-mail ──────────────────────────────────────────── */
@@ -1100,6 +1332,8 @@ export default function OrgChart() {
             onAddChild={handleAddChild}
             isRoot={selectedNode.node.id === 'MINISTRO'}
             startInEdit={autoEditId === selectedNode.node.id}
+            onSelectNode={handleSelectNode}
+            onNavigateToDept={onNavigateToDept}
           />
         )}
 
