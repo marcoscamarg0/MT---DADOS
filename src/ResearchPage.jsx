@@ -13,25 +13,25 @@ const CATEGORIES = [
     id: 'governanca', icon: Shield, color: '#3b82f6', bg: 'rgba(59,130,246,0.12)',
     title: 'Governança de Dados na APF',
     description: 'Frameworks, políticas e boas práticas para o setor público federal',
-    query: 'Como estruturar um programa de governança de dados no serviço público federal brasileiro, considerando a LGPD e as diretrizes do TCU e CGU?',
+    query: 'Como estruturar um programa de governança de dados no serviço público federal brasileiro e quem eu devo procurar internamente no órgão para iniciar esse projeto?',
   },
   {
     id: 'maturidade', icon: BarChart3, color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)',
     title: 'Maturidade em Dados',
     description: 'Modelos DMBOK, CMMI e avaliação de maturidade organizacional',
-    query: 'Quais são os principais modelos de maturidade em dados (DMBOK, CMMI, Data Management Maturity) e como aplicá-los em órgãos do governo federal?',
+    query: 'Quais são os principais modelos de maturidade em dados e quais setores ou coordenadores no nosso órgão podem atuar como líderes dessa transformação?',
   },
   {
     id: 'lgpd', icon: FileText, color: '#10b981', bg: 'rgba(16,185,129,0.12)',
     title: 'LGPD no Setor Público',
     description: 'Conformidade, adequação e responsabilidade dos órgãos públicos',
-    query: 'Quais são as obrigações específicas dos órgãos da administração pública federal sob a LGPD? Quais os papéis do controlador e do encarregado de dados?',
+    query: 'Quais as obrigações da APF sob a LGPD e quais especialistas do nosso quadro devem fazer parte do comitê de adequação?',
   },
   {
     id: 'politicas', icon: Globe, color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',
     title: 'Políticas e Frameworks Nacionais',
     description: 'INDA, EGD, PNPD e estratégias de dados do governo federal',
-    query: 'Explique a Infraestrutura Nacional de Dados Abertos (INDA), a Estratégia de Governo Digital (EGD) e sua relação com a gestão de dados na APF.',
+    query: 'Explique a Infraestrutura Nacional de Dados Abertos (INDA) e aponte os setores que devem garantir o cumprimento do decreto 8.777.',
   }
 ];
 
@@ -67,8 +67,8 @@ function SimpleMarkdown({ text }) {
         i++;
       }
       elements.push(
-        <div key={'table' + i} style={{ overflowX: 'auto', margin: '16px 0' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', border: '1px solid var(--border)' }}>
+        <div key={'table' + i} style={{ overflowX: 'auto', margin: '20px 0', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', border: '1px solid var(--border)' }}>
             <tbody>
               {tableLines.map((tLine, tIdx) => {
                 const isHeader = tIdx === 0;
@@ -76,9 +76,9 @@ function SimpleMarkdown({ text }) {
                 if (isSeparator) return null;
                 const cells = tLine.split('|').map(c => c.trim()).filter((_, idx, arr) => idx !== 0 && idx !== arr.length - 1);
                 return (
-                  <tr key={tIdx} style={{ background: isHeader ? 'var(--bg-elevated)' : 'transparent', borderBottom: '1px solid var(--border)' }}>
+                  <tr key={tIdx} style={{ background: isHeader ? 'var(--bg-elevated)' : 'var(--bg-surface)', borderBottom: '1px solid var(--border)' }}>
                     {cells.map((cell, cIdx) => (
-                      <td key={cIdx} style={{ padding: '8px 12px', fontWeight: isHeader ? '700' : '400', borderRight: '1px solid var(--border)' }}>
+                      <td key={cIdx} style={{ padding: '12px 16px', fontWeight: isHeader ? '700' : '400', borderRight: '1px solid var(--border)', color: isHeader ? 'var(--primary)' : 'var(--text)' }}>
                         {parseBold(cell)}
                       </td>
                     ))}
@@ -92,28 +92,28 @@ function SimpleMarkdown({ text }) {
       continue;
     }
 
-    if (line.startsWith('### ')) elements.push(<h3 key={i} className="research-md-h3">{line.slice(4)}</h3>);
-    else if (line.startsWith('## ')) elements.push(<h2 key={i} className="research-md-h2">{line.slice(3)}</h2>);
+    if (line.startsWith('### ')) elements.push(<h3 key={i} className="research-md-h3" style={{ color: 'var(--primary)', marginTop: '24px' }}>{line.slice(4)}</h3>);
+    else if (line.startsWith('## ')) elements.push(<h2 key={i} className="research-md-h2" style={{ borderBottom: '2px solid var(--border)', paddingBottom: '8px', marginTop: '32px' }}>{line.slice(3)}</h2>);
     else if (line.startsWith('# ')) elements.push(<h1 key={i} className="research-md-h1">{line.slice(2)}</h1>);
     else if (line.startsWith('- ') || line.startsWith('* ')) {
       const items = [];
       while (i < lines.length && (lines[i].startsWith('- ') || lines[i].startsWith('* '))) {
-        items.push(<li key={i}>{parseBold(lines[i].slice(2))}</li>);
+        items.push(<li key={i} style={{ marginBottom: '6px' }}>{parseBold(lines[i].slice(2))}</li>);
         i++;
       }
-      elements.push(<ul key={'ul' + i} className="research-md-ul">{items}</ul>);
+      elements.push(<ul key={'ul' + i} className="research-md-ul" style={{ background: 'var(--bg-elevated)', padding: '16px 16px 16px 32px', borderRadius: '8px' }}>{items}</ul>);
       continue;
     } else if (/^\d+\. /.test(line)) {
       const items = [];
       while (i < lines.length && /^\d+\. /.test(lines[i])) {
-        items.push(<li key={i}>{parseBold(lines[i].replace(/^\d+\. /, ''))}</li>);
+        items.push(<li key={i} style={{ marginBottom: '6px' }}>{parseBold(lines[i].replace(/^\d+\. /, ''))}</li>);
         i++;
       }
-      elements.push(<ol key={'ol' + i} className="research-md-ol">{items}</ol>);
+      elements.push(<ol key={'ol' + i} className="research-md-ol" style={{ background: 'var(--bg-elevated)', padding: '16px 16px 16px 32px', borderRadius: '8px' }}>{items}</ol>);
       continue;
-    } else if (line.startsWith('---')) elements.push(<hr key={i} className="research-md-hr" />);
-    else if (line.trim() === '') elements.push(<div key={i} style={{ height: 8 }} />);
-    else elements.push(<p key={i} className="research-md-p">{parseBold(line)}</p>);
+    } else if (line.startsWith('---')) elements.push(<hr key={i} className="research-md-hr" style={{ borderTop: '2px dashed var(--border)', margin: '24px 0' }} />);
+    else if (line.trim() === '') elements.push(<div key={i} style={{ height: 12 }} />);
+    else elements.push(<p key={i} className="research-md-p" style={{ fontSize: '0.95rem', lineHeight: '1.7' }}>{parseBold(line)}</p>);
     i++;
   }
   return <div className="research-md">{elements}</div>;
@@ -175,13 +175,15 @@ export default function ResearchPage({ contacts = [] }) {
 
   const findRelated = useCallback((q) =>
     contacts.map(c => ({ ...c, score: scoreContact(c, q) }))
-      .filter(c => c.score > 0).sort((a, b) => b.score - a.score).slice(0, 6),
+      .filter(c => c.score > 0).sort((a, b) => b.score - a.score).slice(0, 10),
     [contacts]);
 
   const doSearch = useCallback(async (q) => {
     if (!q.trim()) return;
     setLoading(true); setError(null); setResult(null);
-    setRelated(findRelated(q));
+
+    const foundRelated = findRelated(q);
+    setRelated(foundRelated);
 
     try {
       const activeCustomSources = customSources.filter(s => selectedSources.has(s.id));
@@ -205,8 +207,13 @@ export default function ResearchPage({ contacts = [] }) {
       const res = await fetch(`${API}/research/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q, sources: enrichedSources }),
+        body: JSON.stringify({
+          query: q,
+          sources: enrichedSources,
+          contacts: foundRelated
+        }),
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erro ao consultar a IA');
 
@@ -265,7 +272,6 @@ export default function ResearchPage({ contacts = [] }) {
   };
 
   const handleDeleteSource = async (id) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta fonte do banco?')) return;
     try {
       await fetch(`${API}/research/sources/${id}`, { method: 'DELETE' });
     } catch (err) { }
@@ -303,7 +309,7 @@ export default function ResearchPage({ contacts = [] }) {
                 className="research-search-input"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Ex: Como implementar governança de dados no MT com base no link selecionado?"
+                placeholder="Ex: Como implementar governança de dados no MT e quem do banco de dados eu chamo para isso?"
                 style={{
                   resize: 'vertical',
                   minHeight: '80px',
@@ -351,13 +357,93 @@ export default function ResearchPage({ contacts = [] }) {
 
       <div className="research-body">
 
+        {(loading || result || error) && (
+          <div ref={resultRef} className="research-result-panel">
+            <div className="research-result-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="research-result-icon"><Brain size={15} /></div>
+                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Análise da IA (Tutor Acadêmico)</span>
+                {result && <span className="research-result-badge">Laguna XS-2.1</span>}
+                {selectedSources.size > 0 && <span className="research-result-badge" style={{ background: 'var(--success-light)', color: 'var(--success)', borderColor: 'var(--success)' }}>{selectedSources.size} fonte(s) lida(s)</span>}
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {result && <button className="research-icon-btn" onClick={copyResult}>{copied ? <Check size={13} /> : <Copy size={13} />}</button>}
+                <button className="research-icon-btn" onClick={clear}><RotateCcw size={13} /></button>
+              </div>
+            </div>
+
+            <div className="research-result-body" style={{ background: 'var(--bg-base)' }}>
+              {loading && <div><div className="research-loading-label"><span className="research-spinner" /> Lendo links, verificando o banco de especialistas e estruturando sua resposta...</div><SkeletonBlock lines={7} /></div>}
+              {error && (
+                <div className="research-error">
+                  <AlertCircle size={16} />
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Erro ao consultar a IA</div>
+                    <div style={{ fontSize: '0.8rem', marginTop: 4, opacity: 0.8 }}>{error}</div>
+                  </div>
+                </div>
+              )}
+              {result && !loading && (
+                <div className="research-result-query-label"><Search size={12} />"{query.slice(0, 120)}{query.length > 120 ? '…' : ''}"</div>
+              )}
+              {result && !loading && <SimpleMarkdown text={result} />}
+            </div>
+          </div>
+        )}
+
+        <div className="research-section">
+          <div className="research-section-header">
+            <BookOpen size={16} style={{ color: 'var(--accent)' }} />
+            <h2 className="research-section-title">Tópicos de Pesquisa Rápida (Com cruzamento de banco de dados)</h2>
+          </div>
+          <div className="research-categories-grid">
+            {CATEGORIES.map(cat => {
+              const Icon = cat.icon;
+              return (
+                <button key={cat.id} className="research-category-card"
+                  style={{ '--cat-color': cat.color, '--cat-bg': cat.bg }}
+                  onClick={() => handleCat(cat)} disabled={loading}>
+                  <div className="research-category-icon"><Icon size={20} /></div>
+                  <div className="research-category-body">
+                    <div className="research-category-title">{cat.title}</div>
+                    <div className="research-category-desc">{cat.description}</div>
+                  </div>
+                  <ChevronRight size={15} className="research-category-arrow" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="research-section">
+          <div className="research-section-header">
+            <BookMarked size={16} style={{ color: 'var(--success)' }} />
+            <h2 className="research-section-title">Biblioteca de Referências Nacionais</h2>
+          </div>
+          <div className="research-tags-filter">
+            {allTags.map(t => (
+              <button key={t} className={`research-tag-btn${activeTag === t ? ' active' : ''}`} onClick={() => setActiveTag(t)}>{t}</button>
+            ))}
+          </div>
+          <div className="research-refs-grid">
+            {filteredRefs.map(ref => (
+              <a key={ref.id} href={ref.url} target="_blank" rel="noopener noreferrer" className="research-ref-card">
+                <div className="research-ref-top"><span className="research-ref-type">{ref.type}</span><span className="research-ref-year">{ref.year}</span></div>
+                <div className="research-ref-title">{ref.title}</div>
+                <div className="research-ref-tags">{ref.tags.map(t => <span key={t} className="research-ref-tag"><Tag size={9} /> {t}</span>)}</div>
+                <ExternalLink size={12} className="research-ref-ext" />
+              </a>
+            ))}
+          </div>
+        </div>
+
         <div className="research-section">
           <div className="research-section-header">
             <Database size={16} style={{ color: 'var(--primary)' }} />
             <h2 className="research-section-title">Memória da IA (Fontes e Links no Banco de Dados)</h2>
           </div>
           <p className="research-section-sub">
-            Adicione páginas web, links de documentação ou anotações. As fontes adicionadas serão automaticamente marcadas para leitura.
+            Adicione páginas web, links de documentação ou anotações. As fontes adicionadas serão automaticamente marcadas para leitura da IA.
           </p>
 
           <form onSubmit={handleAddSource} style={{
@@ -446,86 +532,6 @@ export default function ResearchPage({ contacts = [] }) {
               ))}
             </div>
           )}
-        </div>
-
-        {(loading || result || error) && (
-          <div ref={resultRef} className="research-result-panel">
-            <div className="research-result-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div className="research-result-icon"><Brain size={15} /></div>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Análise da IA</span>
-                {result && <span className="research-result-badge">Laguna XS-2.1 · OpenRouter</span>}
-                {selectedSources.size > 0 && <span className="research-result-badge" style={{ background: 'var(--success-light)', color: 'var(--success)', borderColor: 'var(--success)' }}>{selectedSources.size} fonte(s) lida(s)</span>}
-              </div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {result && <button className="research-icon-btn" onClick={copyResult}>{copied ? <Check size={13} /> : <Copy size={13} />}</button>}
-                <button className="research-icon-btn" onClick={clear}><RotateCcw size={13} /></button>
-              </div>
-            </div>
-
-            <div className="research-result-body">
-              {loading && <div><div className="research-loading-label"><span className="research-spinner" /> Consultando base de conhecimento e lendo links...</div><SkeletonBlock lines={7} /></div>}
-              {error && (
-                <div className="research-error">
-                  <AlertCircle size={16} />
-                  <div>
-                    <div style={{ fontWeight: 600 }}>Erro ao consultar a IA</div>
-                    <div style={{ fontSize: '0.8rem', marginTop: 4, opacity: 0.8 }}>{error}</div>
-                  </div>
-                </div>
-              )}
-              {result && !loading && (
-                <div className="research-result-query-label"><Search size={12} />"{query.slice(0, 120)}{query.length > 120 ? '…' : ''}"</div>
-              )}
-              {result && !loading && <SimpleMarkdown text={result} />}
-            </div>
-          </div>
-        )}
-
-        <div className="research-section">
-          <div className="research-section-header">
-            <BookMarked size={16} style={{ color: 'var(--success)' }} />
-            <h2 className="research-section-title">Biblioteca de Referências</h2>
-          </div>
-          <div className="research-tags-filter">
-            {allTags.map(t => (
-              <button key={t} className={`research-tag-btn${activeTag === t ? ' active' : ''}`} onClick={() => setActiveTag(t)}>{t}</button>
-            ))}
-          </div>
-          <div className="research-refs-grid">
-            {filteredRefs.map(ref => (
-              <a key={ref.id} href={ref.url} target="_blank" rel="noopener noreferrer" className="research-ref-card">
-                <div className="research-ref-top"><span className="research-ref-type">{ref.type}</span><span className="research-ref-year">{ref.year}</span></div>
-                <div className="research-ref-title">{ref.title}</div>
-                <div className="research-ref-tags">{ref.tags.map(t => <span key={t} className="research-ref-tag"><Tag size={9} /> {t}</span>)}</div>
-                <ExternalLink size={12} className="research-ref-ext" />
-              </a>
-            ))}
-          </div>
-        </div>
-
-        <div className="research-section">
-          <div className="research-section-header">
-            <BookOpen size={16} style={{ color: 'var(--accent)' }} />
-            <h2 className="research-section-title">Tópicos de Pesquisa Rápida</h2>
-          </div>
-          <div className="research-categories-grid">
-            {CATEGORIES.map(cat => {
-              const Icon = cat.icon;
-              return (
-                <button key={cat.id} className="research-category-card"
-                  style={{ '--cat-color': cat.color, '--cat-bg': cat.bg }}
-                  onClick={() => handleCat(cat)} disabled={loading}>
-                  <div className="research-category-icon"><Icon size={20} /></div>
-                  <div className="research-category-body">
-                    <div className="research-category-title">{cat.title}</div>
-                    <div className="research-category-desc">{cat.description}</div>
-                  </div>
-                  <ChevronRight size={15} className="research-category-arrow" />
-                </button>
-              );
-            })}
-          </div>
         </div>
 
       </div>

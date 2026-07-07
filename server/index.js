@@ -304,17 +304,19 @@ app.post('/api/research/fetch-url', async (req, res) => {
 const SYSTEM_PROMPT = `Você é um especialista sênior em Gestão e Governança de Dados no setor público federal brasileiro e atua como um tutor acadêmico interativo.
 
 O sistema de frontend renderizará seu texto em uma interface intuitiva para estudos.
-Ao responder:
+Ao responder siga estritamente as regras abaixo:
 1. Seja altamente visual, prático e focado na facilidade de aprendizado.
 2. Estruture a resposta com seções muito claras usando Markdown (## e ###).
 3. Utilize TABELAS em Markdown extensivamente para comparar cenários, modelos, prós e contras, e dados estruturados.
-4. Use listas encadeadas (bullet points) para criar fluxos de processos ou mapas mentais em texto.
+4. Use listas encadeadas (bullet points) para criar fluxos de processos.
 5. Destaque em **negrito** todos os termos técnicos, leis e conceitos-chave.
 6. Sempre cite legislação pertinente, frameworks (DAMA-DMBOK, EGD, INDA) e acórdãos (TCU).
-7. Mantenha um tom profissional, didático e estritamente em português brasileiro.`;
+7. Mantenha um tom profissional, didático e estritamente em português brasileiro.
+8. CRUZAMENTO DE DADOS: Sempre que o usuário perguntar "quem procurar", "com quem falar" ou solicitar recomendações baseadas no órgão, cruze o conhecimento teórico com a lista de especialistas internos fornecida no contexto e recomende nominalmente as pessoas, citando seus cargos e setores.`;
 
 app.post('/api/research/query', async (req, res) => {
-  const { query, sources } = req.body;
+  const { query, sources, contacts } = req.body;  // AGORA RECEBE CONTACTS DO FRONTEND
+
   if (!query || typeof query !== 'string') {
     return res.status(400).json({ error: 'Campo obrigatorio: query' });
   }
@@ -326,6 +328,7 @@ app.post('/api/research/query', async (req, res) => {
     });
   }
 
+  // 1. INJEÇÃO DE FONTES EXTERNAS (LINKS/NOTAS)
   let sourcesContext = '';
   if (Array.isArray(sources) && sources.length > 0) {
     const items = sources.map((s, i) => {
@@ -335,10 +338,17 @@ app.post('/api/research/query', async (req, res) => {
       if (s.conteudo_url) block += `\nConteudo da pagina:\n${s.conteudo_url.slice(0, 2000)}`;
       return block;
     }).join('\n\n---\n\n');
-    sourcesContext = `\n\n## Fontes Personalizadas do Usuario\nUse as informacoes abaixo como contexto adicional para sua resposta. Cite as fontes quando relevante.\n\n${items}`;
+    sourcesContext = `\n\n## Fontes de Pesquisa\nUse as informacoes abaixo como contexto adicional. Cite as fontes quando relevante.\n\n${items}`;
   }
 
-  const finalSystemPrompt = SYSTEM_PROMPT + sourcesContext;
+  // 2. INJEÇÃO DOS ESPECIALISTAS DO BANCO DE DADOS
+  let contactsContext = '';
+  if (Array.isArray(contacts) && contacts.length > 0) {
+    const contactsList = contacts.map(c => `- ${c.nome} | Cargo: ${c.cargo || 'N/A'} | Departamento: ${c.departamento || 'N/A'} | Email: ${c.email || 'N/A'}`).join('\n');
+    contactsContext = `\n\n## Base de Especialistas do Órgão\nVocê tem acesso aos seguintes servidores da organização. Baseado na pergunta, recomende essas pessoas cruzando a teoria com a especialidade delas:\n${contactsList}`;
+  }
+
+  const finalSystemPrompt = SYSTEM_PROMPT + sourcesContext + contactsContext;
 
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -355,8 +365,8 @@ app.post('/api/research/query', async (req, res) => {
           { role: 'system', content: finalSystemPrompt },
           { role: 'user', content: query },
         ],
-        max_tokens: 1800,
-        temperature: 0.45,
+        max_tokens: 2200, // Aumentado para respostas mais longas e detalhadas
+        temperature: 0.4,
       }),
     });
 
@@ -383,6 +393,8 @@ app.get(/^(?!\/api).*/, (req, res) => {
 app.listen(PORT, async () => {
   try {
     await supabase.from('contacts').select('id').limit(1);
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
   } catch (error) {
+    console.log("Erro ao conectar no banco no Startup");
   }
 });
