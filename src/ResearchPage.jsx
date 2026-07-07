@@ -6,7 +6,7 @@ import {
   BookMarked, Lightbulb, AlertCircle, ChevronDown, Plus, Trash2, Link,
   Send, MessageSquarePlus, PanelRightOpen, PanelRightClose, Bot, User
 } from 'lucide-react';
-import { loadOrgFlat, descendantsOf } from './OrgChart';
+import { loadOrgFlat } from './OrgChart';
 
 const API = '/api';
 const HISTORY_KEY = 'mt-chat-history-v2';
@@ -137,79 +137,25 @@ function TypingIndicator() {
   );
 }
 
-/* Só recomendamos contato quando o usuário pede explicitamente,
-   e somente da(s) unidade(s) do organograma que ele mencionar. */
-const CONTACT_INTENT_RE = /(contato|contatos|quem (devo|posso|eu devo|eu poderia)?\s*procurar|com quem (eu )?falo|falar com|indic(a|ar|ação|acao|ado)|respons[aá]vel|quem (é|e|cuida|atua|resolve|trata)|e-?mail de|telefone de|ramal de|quero (o )?contato|me (d[eê]|passa|manda|indica) (o |os |um )?contato)/i;
-
 function normalizeText(s) {
   return (s || '')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 }
 
-/* Encontra o nó do organograma mencionado na pergunta: prioriza o
-   nome completo do setor (menos ambíguo) e, na ausência dele, a
-   sigla — exigindo que apareça como token maiúsculo isolado no
-   texto original para evitar falsos positivos (ex.: "SE" x "se"). */
-function findMentionedDept(query, orgNodes) {
-  const normQ = normalizeText(query);
-  let best = null;
-  let bestLen = 0;
-  orgNodes.forEach(n => {
-    if (!n.nome) return;
-    const normNome = normalizeText(n.nome);
-    if (normNome.length > 4 && normQ.includes(normNome) && normNome.length > bestLen) {
-      best = n;
-      bestLen = normNome.length;
-    }
-  });
-  if (best) return best;
-
-  const upperTokens = new Set((query.match(/\b[A-ZÀ-Ú]{2,}\b/g) || []).map(t => t.toUpperCase()));
-  return orgNodes.find(n => n.sigla && upperTokens.has(n.sigla.toUpperCase())) || null;
-}
-
-/* Encontra contatos cujo nome (completo ou parcial, ex.: só o
-   primeiro + último nome) aparece explicitamente na pergunta do
-   usuário. Exige pelo menos duas palavras do nome coincidindo (ou
-   o nome inteiro, se tiver só uma palavra) para evitar falsos
-   positivos com nomes muito comuns/curtos. */
-function findMentionedContactsByName(query, contacts) {
-  const normQ = normalizeText(query);
+/* Usado só para decidir quais cartões de contato mostrar na tela
+   embaixo da resposta (UI). Não limita o que a IA pode citar — ela
+   já recebe o diretório e o organograma completos no back-end. */
+function extractMentionedContacts(answerText, contacts) {
+  if (!answerText) return [];
+  const normAnswer = normalizeText(answerText);
   return contacts.filter(c => {
     if (!c.nome) return false;
     const parts = normalizeText(c.nome).split(/\s+/).filter(p => p.length > 2);
     if (parts.length === 0) return false;
-    const matchCount = parts.filter(p => normQ.includes(p)).length;
+    const matchCount = parts.filter(p => normAnswer.includes(p)).length;
     return parts.length === 1 ? matchCount === 1 : matchCount >= 2;
-  });
-}
-
-/* Retorna os contatos relevantes para a resposta, cruzando duas
-   fontes de dados do sistema:
-   1) Setor: unidade do organograma mencionada e suas subunidades;
-   2) Nome: pessoa citada diretamente na pergunta.
-   Nunca retorna contatos de fora do que foi pedido. */
-function findRelatedByOrgChart(query, orgNodes, contacts) {
-  if (!CONTACT_INTENT_RE.test(query)) return [];
-
-  const byName = findMentionedContactsByName(query, contacts);
-
-  const node = findMentionedDept(query, orgNodes);
-  let byDept = [];
-  if (node) {
-    const deptKeys = new Set([node.deptKey].filter(Boolean));
-    descendantsOf(orgNodes, node.id).forEach(id => {
-      const child = orgNodes.find(n => n.id === id);
-      if (child?.deptKey) deptKeys.add(child.deptKey);
-    });
-    byDept = contacts.filter(c => deptKeys.has(c.departamento));
-  }
-
-  const merged = [...byName];
-  byDept.forEach(c => { if (!merged.some(m => m.id === c.id)) merged.push(c); });
-
-  return merged.slice(0, 12);
+  }).slice(0, 12);
 }
 
 function loadHistory() {
@@ -266,8 +212,6 @@ export default function ResearchPage({ contacts = [] }) {
     }
   }, [input]);
 
-  const findRelated = useCallback((q) => findRelatedByOrgChart(q, orgNodes, contacts), [orgNodes, contacts]);
-
   const sendMessage = useCallback(async (text) => {
     const q = text.trim();
     if (!q || loading) return;
@@ -277,8 +221,6 @@ export default function ResearchPage({ contacts = [] }) {
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setLoading(true);
-
-    const foundRelated = findRelated(q);
 
     try {
       const activeCustomSources = customSources.filter(s => selectedSources.has(s.id));
@@ -309,7 +251,8 @@ export default function ResearchPage({ contacts = [] }) {
         body: JSON.stringify({
           query: q,
           sources: enrichedSources,
-          contacts: foundRelated,
+          contacts,
+          orgChart: orgNodes,
           history,
         }),
       });
@@ -321,7 +264,7 @@ export default function ResearchPage({ contacts = [] }) {
         id: Date.now() + 1,
         role: 'assistant',
         content: data.answer,
-        related: foundRelated,
+        related: extractMentionedContacts(data.answer, contacts),
         sourcesUsed: selectedSources.size,
       };
       setMessages(prev => [...prev, assistantMsg]);
@@ -331,7 +274,7 @@ export default function ResearchPage({ contacts = [] }) {
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, findRelated, customSources, selectedSources]);
+  }, [loading, messages, contacts, orgNodes, customSources, selectedSources]);
 
   const handleSubmit = (e) => { e?.preventDefault(); sendMessage(input); };
   const handleCat = (cat) => { sendMessage(cat.query); };
@@ -417,8 +360,7 @@ export default function ResearchPage({ contacts = [] }) {
                 <div className="chat-welcome-icon"><Sparkles size={26} /></div>
                 <h1 className="chat-welcome-title">Como posso ajudar hoje?</h1>
                 <p className="chat-welcome-sub">
-                  Tire dúvidas sobre governança de dados, LGPD, ANPD, ECA Digital e o Marco Legal da IA no Ministério dos Transportes.
-                  Para indicar um contato, peça e mencione o setor (nome ou sigla) ou o nome da pessoa — ex.: <em>"quem devo procurar na Secretaria Executiva?"</em> ou <em>"qual o contato de Maria Silva?"</em>
+                  Tire dúvidas sobre governança de dados, LGPD, ANPD, ECA Digital e o Marco Legal da IA — e pergunte à vontade sobre contatos, setores e o organograma do Ministério dos Transportes, ex.: <em>"quem devo procurar na Secretaria Executiva?"</em> ou <em>"qual o contato de Maria Silva?"</em>
                 </p>
                 <div className="chat-suggestions-grid">
                   {CATEGORIES.map(cat => {

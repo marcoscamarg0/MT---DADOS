@@ -1,0 +1,316 @@
+diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/server/index.js repo/server/index.js
+--- repo_orig/server/index.js	2026-07-07 20:48:49.992426319 +0000
++++ repo/server/index.js	2026-07-07 20:57:17.636891550 +0000
+@@ -303,17 +303,16 @@
+   }
+ });
+ 
+-const SYSTEM_PROMPT = `Você é um especialista sênior em Gestão e Governança de Dados, atuando como assistente de chat interno do Ministério dos Transportes (MT), voltado exclusivamente aos servidores desse órgão.
++const SYSTEM_PROMPT = `Você é um especialista sênior em Gestão e Governança de Dados, atuando como assistente de chat interno do Ministério dos Transportes (MT). Este chat é de uso pessoal do usuário (uso único, não público), então você tem liberdade para conversar sobre qualquer assunto que ele trouxer, além dos temas do órgão.
+ 
+ O sistema de frontend renderiza seu texto em uma interface de chat (bolhas de conversa), então respostas devem ser diretas e conversacionais, mas sem perder a profundidade técnica quando o tema exigir.
+ Ao responder siga estritamente as regras abaixo:
+-0. ESCOPO EXCLUSIVO (regra prioritária): você atende SOMENTE assuntos ligados ao Ministério dos Transportes — governança e gestão de dados, LGPD/proteção de dados no serviço público, organograma, contatos e setores do órgão, processos internos e legislação/normas aplicáveis à Administração Pública Federal. Se a pergunta não tiver relação alguma com o Ministério dos Transportes ou sua atuação (ex.: assuntos pessoais, entretenimento, outros órgãos sem relação, temas genéricos sem qualquer conexão com dados/gestão pública), recuse educadamente, explique que você é um assistente dedicado ao Ministério dos Transportes e reoriente a conversa para os temas que você cobre. Nunca invente competências ou informações de outros órgãos como se fossem do MT.
+ 1. Responda como em uma conversa: para perguntas simples, seja direto e objetivo (poucos parágrafos). Para perguntas amplas ou técnicas, aprofunde com estrutura visual.
+ 2. Quando a resposta for longa, estruture com Markdown (## e ###), TABELAS para comparar cenários/prós/contras/dados, e listas para fluxos de processo.
+ 3. Destaque em **negrito** todos os termos técnicos, leis e conceitos-chave.
+-4. Sempre cite a legislação, normas e frameworks pertinentes de forma precisa e atualizada (ver bloco de "Base Legal Atualizada" abaixo), além de frameworks (DAMA-DMBOK, EGD, INDA) e acórdãos (TCU).
+-5. Mantenha um tom profissional, didático, cordial e estritamente em português brasileiro.
+-6. CRUZAMENTO DE DADOS (regra restritiva): NUNCA cite, sugira ou invente o nome de uma pessoa específica por conta própria. Só mencione nomes de servidores se a seção "Base de Especialistas do Órgão" estiver presente no contexto — ela só é enviada quando o sistema já cruzou automaticamente os dados de contatos do órgão (por nome citado na pergunta e/ou por setor do organograma mencionado). Se essa seção existir, recomende nominalmente apenas as pessoas listadas nela (já filtradas para corresponder exatamente ao nome e/ou setor pedido), citando cargo e setor. Se essa seção não estiver presente, mesmo que a pergunta pareça sobre "quem procurar", responda apenas com orientação teórica/processual e diga que, para indicar um contato, é necessário informar o nome da pessoa ou o setor específico do organograma.
++4. Sempre cite a legislação, normas e frameworks pertinentes de forma precisa e atualizada (ver bloco de "Base Legal Atualizada" abaixo), além de frameworks (DAMA-DMBOK, EGD, INDA) e acórdãos (TCU), quando o tema for de governança de dados.
++5. Mantenha um tom profissional, didático e cordial, estritamente em português brasileiro.
++6. CRUZAMENTO DE DADOS: você recebe abaixo a base completa de contatos e o organograma inteiro do órgão. Use-os livremente — cite nomes, cargos, e-mails, setores e a hierarquia entre eles sempre que ajudar a responder, sem precisar que o usuário peça de forma explícita ou mencione o setor exato.
+ 7. Use o histórico da conversa para manter contexto entre mensagens, como em um chat real — não repita saudações a cada mensagem.
+ 
+ ## Base Legal Atualizada (referência obrigatória — mantenha-se fiel a estas informações, pois é o panorama legal mais recente conhecido)
+@@ -345,7 +344,7 @@
+ Sempre que uma informação legislativa depender de tramitação em andamento (como o Marco Legal da IA) ou de regulamentação futura pela ANPD, sinalize isso explicitamente ao usuário como "em tramitação" ou "pendente de regulamentação", para não passar a impressão de que já é lei vigente.`;
+ 
+ app.post('/api/research/query', async (req, res) => {
+-  const { query, sources, contacts, history } = req.body;
++  const { query, sources, contacts, orgChart, history } = req.body;
+ 
+   if (!query || typeof query !== 'string') {
+     return res.status(400).json({ error: 'Campo obrigatorio: query' });
+@@ -372,11 +371,29 @@
+ 
+   let contactsContext = '';
+   if (Array.isArray(contacts) && contacts.length > 0) {
+-    const contactsList = contacts.map(c => `- ${c.nome} | Cargo: ${c.cargo || 'N/A'} | Departamento: ${c.departamento || 'N/A'} | Email: ${c.email || 'N/A'}`).join('\n');
+-    contactsContext = `\n\n## Base de Especialistas do Órgão\nEstes são os únicos contatos que você pode citar nominalmente nesta resposta (já cruzados pelo sistema com base no nome e/ou no setor do organograma mencionados na pergunta). Recomende-os cruzando a teoria com a especialidade de cada um:\n${contactsList}`;
++    const contactsList = contacts.map(c => `- ${c.nome} | Cargo: ${c.cargo || 'N/A'} | Departamento: ${c.departamento || 'N/A'} | Email: ${c.email || 'N/A'} | Telefone: ${c.telefone || 'N/A'}`).join('\n');
++    contactsContext = `\n\n## Diretório Completo de Contatos do Órgão\nBase completa e atual, direto do banco de dados. Pode citar qualquer pessoa daqui livremente, cruzando com o assunto perguntado:\n${contactsList}`;
+   }
+ 
+-  const finalSystemPrompt = SYSTEM_PROMPT + sourcesContext + contactsContext;
++  let orgContext = '';
++  if (Array.isArray(orgChart) && orgChart.length > 0) {
++    const byId = Object.fromEntries(orgChart.map(n => [n.id, n]));
++    const pathOf = (node) => {
++      const path = [];
++      let cur = node;
++      while (cur) { path.unshift(cur.sigla || cur.nome); cur = cur.parentId ? byId[cur.parentId] : null; }
++      return path.join(' › ');
++    };
++    const orgList = orgChart.map(n => {
++      let line = `- ${n.sigla || n.nome} (${n.nome})${n.deptKey ? ` [deptKey: ${n.deptKey}]` : ''} | Tipo: ${n.tipo || 'N/A'} | Hierarquia: ${pathOf(n)}`;
++      if (n.resumo) line += ` | Resumo: ${n.resumo}`;
++      if (Array.isArray(n.competencias) && n.competencias.length > 0) line += ` | Competências: ${n.competencias.join('; ')}`;
++      return line;
++    }).join('\n');
++    orgContext = `\n\n## Organograma Completo do Órgão\nEstrutura hierárquica inteira, use para explicar hierarquia, competências de cada setor e para cruzar com os contatos acima:\n${orgList}`;
++  }
++
++  const finalSystemPrompt = SYSTEM_PROMPT + sourcesContext + contactsContext + orgContext;
+ 
+   const chatHistory = Array.isArray(history)
+     ? history
+@@ -401,8 +418,9 @@
+           ...chatHistory,
+           { role: 'user', content: query },
+         ],
+-        max_tokens: 2200,
++        max_tokens: 3000,
+         temperature: 0.4,
++        reasoning: { effort: 'medium' },
+       }),
+     });
+ 
+@@ -411,11 +429,17 @@
+     }
+ 
+     const data = await response.json();
+-    const answer = data.choices?.[0]?.message?.content;
++    let answer = data.choices?.[0]?.message?.content;
+     if (!answer) {
+       return res.status(502).json({ error: 'Resposta vazia da IA. Tente novamente.' });
+     }
+ 
++    // Laguna é um modelo com raciocínio nativo ("thinking"); em alguns casos
++    // o provedor pode deixar vazar o bloco de raciocínio dentro do próprio
++    // texto da resposta. Removemos isso por segurança, para o chat nunca
++    // mostrar rascunho de pensamento ao usuário.
++    answer = answer.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
++
+     res.json({ answer, model: data.model });
+   } catch (error) {
+     res.status(500).json({ error: error.message });
+diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/src/App.jsx repo/src/App.jsx
+--- repo_orig/src/App.jsx	2026-07-07 20:48:49.992426319 +0000
++++ repo/src/App.jsx	2026-07-07 20:48:05.161032535 +0000
+@@ -242,11 +242,22 @@
+     } catch { }
+   }, [search, selectedDept]);
+ 
++  // Lista completa e SEM filtro, usada só pelo cruzamento de dados do
++  // chat de IA — nunca deve depender da busca/departamento selecionados
++  // na aba Diretório, senão a IA só "enxerga" o recorte filtrado da tela.
++  const [allContacts, setAllContacts] = useState([]);
++  const fetchAllContacts = useCallback(async () => {
++    try {
++      const res = await fetch(`${API}/contacts`);
++      setAllContacts(await res.json());
++    } catch { }
++  }, []);
++
+   const refreshAll = useCallback(async () => {
+-    await fetchContacts();
++    await Promise.all([fetchContacts(), fetchAllContacts()]);
+     fetch(`${API}/departments`).then(r => r.json()).then(setDepartments).catch(() => {});
+     fetch(`${API}/stats`).then(r => r.json()).then(setStats).catch(() => {});
+-  }, [fetchContacts]);
++  }, [fetchContacts, fetchAllContacts]);
+ 
+   useEffect(() => {
+     fetch(`${API}/departments`).then(r => r.json()).then(setDepartments).catch(() => { });
+@@ -255,6 +266,7 @@
+     fetch(`${API}/stats`).then(r => r.json()).then(setStats).catch(() => { });
+   }, []);
+   useEffect(() => { fetchContacts(); }, [fetchContacts]);
++  useEffect(() => { fetchAllContacts(); }, [fetchAllContacts]);
+ 
+   const toggleSelect = id =>
+     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+@@ -327,7 +339,7 @@
+         });
+       }
+       setContactModal(null);
+-      await fetchContacts();
++      await Promise.all([fetchContacts(), fetchAllContacts()]);
+       fetch(`${API}/stats`).then(r => r.json()).then(setStats).catch(() => {});
+       fetch(`${API}/departments`).then(r => r.json()).then(setDepartments).catch(() => {});
+     } catch { alert('Erro ao salvar contato.'); }
+@@ -337,7 +349,7 @@
+     if (!window.confirm('Excluir este contato?')) return;
+     try {
+       await fetch(`${API}/contacts/${id}`, { method: 'DELETE' });
+-      await fetchContacts();
++      await Promise.all([fetchContacts(), fetchAllContacts()]);
+       fetch(`${API}/stats`).then(r => r.json()).then(setStats).catch(() => {});
+       fetch(`${API}/departments`).then(r => r.json()).then(setDepartments).catch(() => {});
+     } catch { alert('Erro ao excluir contato.'); }
+@@ -553,7 +565,7 @@
+         {/* Main */}
+         <main className={`main-area${activeTab === 'chart' ? ' full-height' : ''}${activeTab === 'research' ? ' full-height' : ''}`}>
+           {activeTab === 'research' && (
+-            <ResearchPage contacts={contacts} />
++            <ResearchPage contacts={allContacts} />
+           )}
+           {activeTab === 'contacts' && (
+             <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/src/ResearchPage.jsx repo/src/ResearchPage.jsx
+--- repo_orig/src/ResearchPage.jsx	2026-07-07 20:48:49.993923725 +0000
++++ repo/src/ResearchPage.jsx	2026-07-07 20:58:41.090577251 +0000
+@@ -6,7 +6,7 @@
+   BookMarked, Lightbulb, AlertCircle, ChevronDown, Plus, Trash2, Link,
+   Send, MessageSquarePlus, PanelRightOpen, PanelRightClose, Bot, User
+ } from 'lucide-react';
+-import { loadOrgFlat, descendantsOf } from './OrgChart';
++import { loadOrgFlat } from './OrgChart';
+ 
+ const API = '/api';
+ const HISTORY_KEY = 'mt-chat-history-v2';
+@@ -137,79 +137,25 @@
+   );
+ }
+ 
+-/* Só recomendamos contato quando o usuário pede explicitamente,
+-   e somente da(s) unidade(s) do organograma que ele mencionar. */
+-const CONTACT_INTENT_RE = /(contato|contatos|quem (devo|posso|eu devo|eu poderia)?\s*procurar|com quem (eu )?falo|falar com|indic(a|ar|ação|acao|ado)|respons[aá]vel|quem (é|e|cuida|atua|resolve|trata)|e-?mail de|telefone de|ramal de|quero (o )?contato|me (d[eê]|passa|manda|indica) (o |os |um )?contato)/i;
+-
+ function normalizeText(s) {
+   return (s || '')
+     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+     .toLowerCase();
+ }
+ 
+-/* Encontra o nó do organograma mencionado na pergunta: prioriza o
+-   nome completo do setor (menos ambíguo) e, na ausência dele, a
+-   sigla — exigindo que apareça como token maiúsculo isolado no
+-   texto original para evitar falsos positivos (ex.: "SE" x "se"). */
+-function findMentionedDept(query, orgNodes) {
+-  const normQ = normalizeText(query);
+-  let best = null;
+-  let bestLen = 0;
+-  orgNodes.forEach(n => {
+-    if (!n.nome) return;
+-    const normNome = normalizeText(n.nome);
+-    if (normNome.length > 4 && normQ.includes(normNome) && normNome.length > bestLen) {
+-      best = n;
+-      bestLen = normNome.length;
+-    }
+-  });
+-  if (best) return best;
+-
+-  const upperTokens = new Set((query.match(/\b[A-ZÀ-Ú]{2,}\b/g) || []).map(t => t.toUpperCase()));
+-  return orgNodes.find(n => n.sigla && upperTokens.has(n.sigla.toUpperCase())) || null;
+-}
+-
+-/* Encontra contatos cujo nome (completo ou parcial, ex.: só o
+-   primeiro + último nome) aparece explicitamente na pergunta do
+-   usuário. Exige pelo menos duas palavras do nome coincidindo (ou
+-   o nome inteiro, se tiver só uma palavra) para evitar falsos
+-   positivos com nomes muito comuns/curtos. */
+-function findMentionedContactsByName(query, contacts) {
+-  const normQ = normalizeText(query);
++/* Usado só para decidir quais cartões de contato mostrar na tela
++   embaixo da resposta (UI). Não limita o que a IA pode citar — ela
++   já recebe o diretório e o organograma completos no back-end. */
++function extractMentionedContacts(answerText, contacts) {
++  if (!answerText) return [];
++  const normAnswer = normalizeText(answerText);
+   return contacts.filter(c => {
+     if (!c.nome) return false;
+     const parts = normalizeText(c.nome).split(/\s+/).filter(p => p.length > 2);
+     if (parts.length === 0) return false;
+-    const matchCount = parts.filter(p => normQ.includes(p)).length;
++    const matchCount = parts.filter(p => normAnswer.includes(p)).length;
+     return parts.length === 1 ? matchCount === 1 : matchCount >= 2;
+-  });
+-}
+-
+-/* Retorna os contatos relevantes para a resposta, cruzando duas
+-   fontes de dados do sistema:
+-   1) Setor: unidade do organograma mencionada e suas subunidades;
+-   2) Nome: pessoa citada diretamente na pergunta.
+-   Nunca retorna contatos de fora do que foi pedido. */
+-function findRelatedByOrgChart(query, orgNodes, contacts) {
+-  if (!CONTACT_INTENT_RE.test(query)) return [];
+-
+-  const byName = findMentionedContactsByName(query, contacts);
+-
+-  const node = findMentionedDept(query, orgNodes);
+-  let byDept = [];
+-  if (node) {
+-    const deptKeys = new Set([node.deptKey].filter(Boolean));
+-    descendantsOf(orgNodes, node.id).forEach(id => {
+-      const child = orgNodes.find(n => n.id === id);
+-      if (child?.deptKey) deptKeys.add(child.deptKey);
+-    });
+-    byDept = contacts.filter(c => deptKeys.has(c.departamento));
+-  }
+-
+-  const merged = [...byName];
+-  byDept.forEach(c => { if (!merged.some(m => m.id === c.id)) merged.push(c); });
+-
+-  return merged.slice(0, 12);
++  }).slice(0, 12);
+ }
+ 
+ function loadHistory() {
+@@ -266,8 +212,6 @@
+     }
+   }, [input]);
+ 
+-  const findRelated = useCallback((q) => findRelatedByOrgChart(q, orgNodes, contacts), [orgNodes, contacts]);
+-
+   const sendMessage = useCallback(async (text) => {
+     const q = text.trim();
+     if (!q || loading) return;
+@@ -278,8 +222,6 @@
+     setInput('');
+     setLoading(true);
+ 
+-    const foundRelated = findRelated(q);
+-
+     try {
+       const activeCustomSources = customSources.filter(s => selectedSources.has(s.id));
+       const enrichedSources = await Promise.all(activeCustomSources.map(async (s) => {
+@@ -309,7 +251,8 @@
+         body: JSON.stringify({
+           query: q,
+           sources: enrichedSources,
+-          contacts: foundRelated,
++          contacts,
++          orgChart: orgNodes,
+           history,
+         }),
+       });
+@@ -321,7 +264,7 @@
+         id: Date.now() + 1,
+         role: 'assistant',
+         content: data.answer,
+-        related: foundRelated,
++        related: extractMentionedContacts(data.answer, contacts),
+         sourcesUsed: selectedSources.size,
+       };
+       setMessages(prev => [...prev, assistantMsg]);
+@@ -331,7 +274,7 @@
+     } finally {
+       setLoading(false);
+     }
+-  }, [loading, messages, findRelated, customSources, selectedSources]);
++  }, [loading, messages, contacts, orgNodes, customSources, selectedSources]);
+ 
+   const handleSubmit = (e) => { e?.preventDefault(); sendMessage(input); };
+   const handleCat = (cat) => { sendMessage(cat.query); };
+@@ -417,8 +360,7 @@
+                 <div className="chat-welcome-icon"><Sparkles size={26} /></div>
+                 <h1 className="chat-welcome-title">Como posso ajudar hoje?</h1>
+                 <p className="chat-welcome-sub">
+-                  Tire dúvidas sobre governança de dados, LGPD, ANPD, ECA Digital e o Marco Legal da IA no Ministério dos Transportes.
+-                  Para indicar um contato, peça e mencione o setor (nome ou sigla) ou o nome da pessoa — ex.: <em>"quem devo procurar na Secretaria Executiva?"</em> ou <em>"qual o contato de Maria Silva?"</em>
++                  Tire dúvidas sobre governança de dados, LGPD, ANPD, ECA Digital e o Marco Legal da IA — e pergunte à vontade sobre contatos, setores e o organograma do Ministério dos Transportes, ex.: <em>"quem devo procurar na Secretaria Executiva?"</em> ou <em>"qual o contato de Maria Silva?"</em>
+                 </p>
+                 <div className="chat-suggestions-grid">
+                   {CATEGORIES.map(cat => {

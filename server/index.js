@@ -303,17 +303,16 @@ app.post('/api/research/fetch-url', async (req, res) => {
   }
 });
 
-const SYSTEM_PROMPT = `Você é um especialista sênior em Gestão e Governança de Dados, atuando como assistente de chat interno do Ministério dos Transportes (MT), voltado exclusivamente aos servidores desse órgão.
+const SYSTEM_PROMPT = `Você é um especialista sênior em Gestão e Governança de Dados, atuando como assistente de chat interno do Ministério dos Transportes (MT). Este chat é de uso pessoal do usuário (uso único, não público), então você tem liberdade para conversar sobre qualquer assunto que ele trouxer, além dos temas do órgão.
 
 O sistema de frontend renderiza seu texto em uma interface de chat (bolhas de conversa), então respostas devem ser diretas e conversacionais, mas sem perder a profundidade técnica quando o tema exigir.
 Ao responder siga estritamente as regras abaixo:
-0. ESCOPO EXCLUSIVO (regra prioritária): você atende SOMENTE assuntos ligados ao Ministério dos Transportes — governança e gestão de dados, LGPD/proteção de dados no serviço público, organograma, contatos e setores do órgão, processos internos e legislação/normas aplicáveis à Administração Pública Federal. Se a pergunta não tiver relação alguma com o Ministério dos Transportes ou sua atuação (ex.: assuntos pessoais, entretenimento, outros órgãos sem relação, temas genéricos sem qualquer conexão com dados/gestão pública), recuse educadamente, explique que você é um assistente dedicado ao Ministério dos Transportes e reoriente a conversa para os temas que você cobre. Nunca invente competências ou informações de outros órgãos como se fossem do MT.
 1. Responda como em uma conversa: para perguntas simples, seja direto e objetivo (poucos parágrafos). Para perguntas amplas ou técnicas, aprofunde com estrutura visual.
 2. Quando a resposta for longa, estruture com Markdown (## e ###), TABELAS para comparar cenários/prós/contras/dados, e listas para fluxos de processo.
 3. Destaque em **negrito** todos os termos técnicos, leis e conceitos-chave.
-4. Sempre cite a legislação, normas e frameworks pertinentes de forma precisa e atualizada (ver bloco de "Base Legal Atualizada" abaixo), além de frameworks (DAMA-DMBOK, EGD, INDA) e acórdãos (TCU).
-5. Mantenha um tom profissional, didático, cordial e estritamente em português brasileiro.
-6. CRUZAMENTO DE DADOS (regra restritiva): NUNCA cite, sugira ou invente o nome de uma pessoa específica por conta própria. Só mencione nomes de servidores se a seção "Base de Especialistas do Órgão" estiver presente no contexto — ela só é enviada quando o sistema já cruzou automaticamente os dados de contatos do órgão (por nome citado na pergunta e/ou por setor do organograma mencionado). Se essa seção existir, recomende nominalmente apenas as pessoas listadas nela (já filtradas para corresponder exatamente ao nome e/ou setor pedido), citando cargo e setor. Se essa seção não estiver presente, mesmo que a pergunta pareça sobre "quem procurar", responda apenas com orientação teórica/processual e diga que, para indicar um contato, é necessário informar o nome da pessoa ou o setor específico do organograma.
+4. Sempre cite a legislação, normas e frameworks pertinentes de forma precisa e atualizada (ver bloco de "Base Legal Atualizada" abaixo), além de frameworks (DAMA-DMBOK, EGD, INDA) e acórdãos (TCU), quando o tema for de governança de dados.
+5. Mantenha um tom profissional, didático e cordial, estritamente em português brasileiro.
+6. CRUZAMENTO DE DADOS: você recebe abaixo a base completa de contatos e o organograma inteiro do órgão. Use-os livremente — cite nomes, cargos, e-mails, setores e a hierarquia entre eles sempre que ajudar a responder, sem precisar que o usuário peça de forma explícita ou mencione o setor exato.
 7. Use o histórico da conversa para manter contexto entre mensagens, como em um chat real — não repita saudações a cada mensagem.
 
 ## Base Legal Atualizada (referência obrigatória — mantenha-se fiel a estas informações, pois é o panorama legal mais recente conhecido)
@@ -345,7 +344,7 @@ Ao responder siga estritamente as regras abaixo:
 Sempre que uma informação legislativa depender de tramitação em andamento (como o Marco Legal da IA) ou de regulamentação futura pela ANPD, sinalize isso explicitamente ao usuário como "em tramitação" ou "pendente de regulamentação", para não passar a impressão de que já é lei vigente.`;
 
 app.post('/api/research/query', async (req, res) => {
-  const { query, sources, contacts, history } = req.body;
+  const { query, sources, contacts, orgChart, history } = req.body;
 
   if (!query || typeof query !== 'string') {
     return res.status(400).json({ error: 'Campo obrigatorio: query' });
@@ -372,11 +371,29 @@ app.post('/api/research/query', async (req, res) => {
 
   let contactsContext = '';
   if (Array.isArray(contacts) && contacts.length > 0) {
-    const contactsList = contacts.map(c => `- ${c.nome} | Cargo: ${c.cargo || 'N/A'} | Departamento: ${c.departamento || 'N/A'} | Email: ${c.email || 'N/A'}`).join('\n');
-    contactsContext = `\n\n## Base de Especialistas do Órgão\nEstes são os únicos contatos que você pode citar nominalmente nesta resposta (já cruzados pelo sistema com base no nome e/ou no setor do organograma mencionados na pergunta). Recomende-os cruzando a teoria com a especialidade de cada um:\n${contactsList}`;
+    const contactsList = contacts.map(c => `- ${c.nome} | Cargo: ${c.cargo || 'N/A'} | Departamento: ${c.departamento || 'N/A'} | Email: ${c.email || 'N/A'} | Telefone: ${c.telefone || 'N/A'}`).join('\n');
+    contactsContext = `\n\n## Diretório Completo de Contatos do Órgão\nBase completa e atual, direto do banco de dados. Pode citar qualquer pessoa daqui livremente, cruzando com o assunto perguntado:\n${contactsList}`;
   }
 
-  const finalSystemPrompt = SYSTEM_PROMPT + sourcesContext + contactsContext;
+  let orgContext = '';
+  if (Array.isArray(orgChart) && orgChart.length > 0) {
+    const byId = Object.fromEntries(orgChart.map(n => [n.id, n]));
+    const pathOf = (node) => {
+      const path = [];
+      let cur = node;
+      while (cur) { path.unshift(cur.sigla || cur.nome); cur = cur.parentId ? byId[cur.parentId] : null; }
+      return path.join(' › ');
+    };
+    const orgList = orgChart.map(n => {
+      let line = `- ${n.sigla || n.nome} (${n.nome})${n.deptKey ? ` [deptKey: ${n.deptKey}]` : ''} | Tipo: ${n.tipo || 'N/A'} | Hierarquia: ${pathOf(n)}`;
+      if (n.resumo) line += ` | Resumo: ${n.resumo}`;
+      if (Array.isArray(n.competencias) && n.competencias.length > 0) line += ` | Competências: ${n.competencias.join('; ')}`;
+      return line;
+    }).join('\n');
+    orgContext = `\n\n## Organograma Completo do Órgão\nEstrutura hierárquica inteira, use para explicar hierarquia, competências de cada setor e para cruzar com os contatos acima:\n${orgList}`;
+  }
+
+  const finalSystemPrompt = SYSTEM_PROMPT + sourcesContext + contactsContext + orgContext;
 
   const chatHistory = Array.isArray(history)
     ? history
