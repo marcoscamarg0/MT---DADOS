@@ -40,6 +40,10 @@ const REFERENCES = [
   { id: 2, title: 'Estratégia de Governo Digital 2024-2027', type: 'Política', tags: ['EGD', 'Governo Digital'], url: 'https://www.gov.br/governodigital/pt-br/estrategia-de-governanca-digital', year: '2024' },
   { id: 3, title: 'DAMA-DMBOK — Data Management Body of Knowledge', type: 'Framework', tags: ['DMBOK', 'Maturidade'], url: 'https://www.dama.org/cpages/body-of-knowledge', year: '2017' },
   { id: 4, title: 'Acórdão TCU 2.569/2020 — Governança de Dados', type: 'Acórdão TCU', tags: ['TCU', 'Governança'], url: 'https://portal.tcu.gov.br', year: '2020' },
+  { id: 5, title: 'Governança de Dados — INDA', type: 'Portal', tags: ['INDA', 'Governança'], url: 'https://www.gov.br/governodigital/pt-br/infraestrutura-nacional-de-dados/governancadedados', year: '2024' },
+  { id: 6, title: 'PGDados — Programa de Governança', type: 'Portal', tags: ['INDA', 'Governança'], url: 'https://www.gov.br/governodigital/pt-br/infraestrutura-nacional-de-dados/governancadedados/pgdados', year: '2024' },
+  { id: 7, title: 'Guia PGDados (Parte 1) — Política Interna', type: 'Guia', tags: ['Guia', 'Governança'], url: 'https://www.gov.br/governodigital/pt-br/infraestrutura-nacional-de-dados/governancadedados/arquivos/guia-pgdados/guia-parte-1_politica-interna-de-governanca-de-dados-_v1-4-2.pdf', year: '2024' },
+  { id: 8, title: 'Guia PGDados (Parte 2) — Estratégia de Dados', type: 'Guia', tags: ['Guia', 'Governança'], url: 'https://www.gov.br/governodigital/pt-br/infraestrutura-nacional-de-dados/governancadedados/arquivos/guia-pgdados/guia-parte-2_estrategia-de-dados_v1-0.pdf', year: '2024' },
 ];
 
 function parseBold(text) {
@@ -207,19 +211,26 @@ export default function ResearchPage({ contacts = [] }) {
       if (res.ok) {
         const data = await res.json();
         setCustomSources([data, ...customSources]);
-        setNewSource({ titulo: '', url: '', notas: '' });
+      } else {
+        const fallbackData = { id: Date.now().toString(), ...newSource };
+        setCustomSources([fallbackData, ...customSources]);
       }
-    } catch (err) { }
+    } catch (err) {
+      const fallbackData = { id: Date.now().toString(), ...newSource };
+      setCustomSources([fallbackData, ...customSources]);
+    } finally {
+      setNewSource({ titulo: '', url: '', notas: '' });
+    }
   };
 
   const handleDeleteSource = async (id) => {
     try {
       await fetch(`${API}/research/sources/${id}`, { method: 'DELETE' });
-      setCustomSources(customSources.filter(s => s.id !== id));
-      const nextSel = new Set(selectedSources);
-      nextSel.delete(id);
-      setSelectedSources(nextSel);
     } catch (err) { }
+    setCustomSources(customSources.filter(s => s.id !== id));
+    const nextSel = new Set(selectedSources);
+    nextSel.delete(id);
+    setSelectedSources(nextSel);
   };
 
   const toggleSourceSelection = (id) => {
@@ -428,6 +439,28 @@ export default function ResearchPage({ contacts = [] }) {
             </div>
           </div>
         )}
+
+        <div className="research-section">
+          <div className="research-section-header">
+            <BookMarked size={16} style={{ color: 'var(--success)' }} />
+            <h2 className="research-section-title">Biblioteca de Referências</h2>
+          </div>
+          <div className="research-tags-filter">
+            {allTags.map(t => (
+              <button key={t} className={`research-tag-btn${activeTag === t ? ' active' : ''}`} onClick={() => setActiveTag(t)}>{t}</button>
+            ))}
+          </div>
+          <div className="research-refs-grid">
+            {filteredRefs.map(ref => (
+              <a key={ref.id} href={ref.url} target="_blank" rel="noopener noreferrer" className="research-ref-card">
+                <div className="research-ref-top"><span className="research-ref-type">{ref.type}</span><span className="research-ref-year">{ref.year}</span></div>
+                <div className="research-ref-title">{ref.title}</div>
+                <div className="research-ref-tags">{ref.tags.map(t => <span key={t} className="research-ref-tag"><Tag size={9} /> {t}</span>)}</div>
+                <ExternalLink size={12} className="research-ref-ext" />
+              </a>
+            ))}
+          </div>
+        </div>
 
         <div className="research-section">
           <div className="research-section-header">
