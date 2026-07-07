@@ -105,10 +105,6 @@ function scoreContact(c, q) {
   return s;
 }
 
-const AV = ['#3b82f6', '#8b5cf6', '#ef4444', '#0891b2', '#10b981', '#f59e0b', '#ec4899'];
-function avatarColor(n) { let h = 0; for (let i = 0; i < n.length; i++) h = n.charCodeAt(i) + ((h << 5) - h); return AV[Math.abs(h) % AV.length]; }
-function initials(n) { const p = n.split(' ').filter(x => x.length > 2); return p.length >= 2 ? (p[0][0] + p[p.length - 1][0]).toUpperCase() : n.slice(0, 2).toUpperCase(); }
-
 export default function ResearchPage({ contacts = [] }) {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -123,6 +119,7 @@ export default function ResearchPage({ contacts = [] }) {
   const [customSources, setCustomSources] = useState([]);
   const [selectedSources, setSelectedSources] = useState(new Set());
   const [newSource, setNewSource] = useState({ titulo: '', url: '', notas: '' });
+  const [isSaving, setIsSaving] = useState(false);
 
   const resultRef = useRef(null);
   const inputRef = useRef(null);
@@ -130,13 +127,14 @@ export default function ResearchPage({ contacts = [] }) {
   const allTags = ['Todos', ...new Set(REFERENCES.flatMap(r => r.tags))];
   const filteredRefs = activeTag === 'Todos' ? REFERENCES : REFERENCES.filter(r => r.tags.includes(activeTag));
 
+  // Carrega do Banco de Dados ao iniciar a página
   useEffect(() => {
     fetch(`${API}/research/sources`)
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) setCustomSources(data);
       })
-      .catch(() => { });
+      .catch(e => console.error('Erro ao buscar do banco:', e));
   }, []);
 
   const findRelated = useCallback((q) =>
@@ -199,38 +197,51 @@ export default function ResearchPage({ contacts = [] }) {
   const copyResult = async () => { await navigator.clipboard.writeText(result || ''); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   const clear = () => { setResult(null); setError(null); setRelated([]); setQuery(''); inputRef.current?.focus(); };
 
+  // SALVAR NO BANCO DE DADOS REALMENTE
   const handleAddSource = async (e) => {
     e.preventDefault();
     if (!newSource.titulo) return;
+    setIsSaving(true);
+
     try {
       const res = await fetch(`${API}/research/sources`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSource)
       });
+
       if (res.ok) {
         const data = await res.json();
-        setCustomSources([data, ...customSources]);
+        setCustomSources([data, ...customSources]); // Adiciona o que voltou do banco (com ID real)
+        setNewSource({ titulo: '', url: '', notas: '' }); // Limpa form
       } else {
-        const fallbackData = { id: Date.now().toString(), ...newSource };
-        setCustomSources([fallbackData, ...customSources]);
+        const err = await res.json();
+        alert(`Erro do servidor ao salvar no banco: ${err.error || 'Verifique a tabela no Supabase'}`);
       }
     } catch (err) {
-      const fallbackData = { id: Date.now().toString(), ...newSource };
-      setCustomSources([fallbackData, ...customSources]);
+      alert('Falha na conexão com o banco de dados. A tabela research_sources existe?');
+      console.error(err);
     } finally {
-      setNewSource({ titulo: '', url: '', notas: '' });
+      setIsSaving(false);
     }
   };
 
+  // DELETAR DO BANCO DE DADOS
   const handleDeleteSource = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta fonte do banco?')) return;
     try {
-      await fetch(`${API}/research/sources/${id}`, { method: 'DELETE' });
-    } catch (err) { }
-    setCustomSources(customSources.filter(s => s.id !== id));
-    const nextSel = new Set(selectedSources);
-    nextSel.delete(id);
-    setSelectedSources(nextSel);
+      const res = await fetch(`${API}/research/sources/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setCustomSources(customSources.filter(s => s.id !== id));
+        const nextSel = new Set(selectedSources);
+        nextSel.delete(id);
+        setSelectedSources(nextSel);
+      } else {
+        alert('Erro ao excluir do banco de dados.');
+      }
+    } catch (err) {
+      console.error('Erro ao excluir:', err);
+    }
   };
 
   const toggleSourceSelection = (id) => {
@@ -312,7 +323,7 @@ export default function ResearchPage({ contacts = [] }) {
         <div className="research-section">
           <div className="research-section-header">
             <Database size={16} style={{ color: 'var(--primary)' }} />
-            <h2 className="research-section-title">Memória da IA (Fontes e Links)</h2>
+            <h2 className="research-section-title">Memória da IA (Fontes e Links no Banco de Dados)</h2>
           </div>
           <p className="research-section-sub">
             Adicione páginas web, links de documentação ou anotações. Selecione as fontes que a IA deve ler antes de responder a sua pesquisa.
@@ -366,8 +377,8 @@ export default function ResearchPage({ contacts = [] }) {
             />
 
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button type="submit" className="research-search-btn" style={{ padding: '10px 20px', borderRadius: '8px' }}>
-                <Plus size={16} /> Adicionar na Memória
+              <button type="submit" className="research-search-btn" disabled={isSaving} style={{ padding: '10px 20px', borderRadius: '8px' }}>
+                {isSaving ? 'Salvando...' : <><Plus size={16} /> Salvar no Banco</>}
               </button>
             </div>
           </form>
@@ -459,30 +470,6 @@ export default function ResearchPage({ contacts = [] }) {
                 <ExternalLink size={12} className="research-ref-ext" />
               </a>
             ))}
-          </div>
-        </div>
-
-        <div className="research-section">
-          <div className="research-section-header">
-            <BookOpen size={16} style={{ color: 'var(--accent)' }} />
-            <h2 className="research-section-title">Tópicos de Pesquisa Rápida</h2>
-          </div>
-          <div className="research-categories-grid">
-            {CATEGORIES.map(cat => {
-              const Icon = cat.icon;
-              return (
-                <button key={cat.id} className="research-category-card"
-                  style={{ '--cat-color': cat.color, '--cat-bg': cat.bg }}
-                  onClick={() => handleCat(cat)} disabled={loading}>
-                  <div className="research-category-icon"><Icon size={20} /></div>
-                  <div className="research-category-body">
-                    <div className="research-category-title">{cat.title}</div>
-                    <div className="research-category-desc">{cat.description}</div>
-                  </div>
-                  <ChevronRight size={15} className="research-category-arrow" />
-                </button>
-              );
-            })}
           </div>
         </div>
 
