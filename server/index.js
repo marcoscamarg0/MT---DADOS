@@ -21,7 +21,9 @@ const supabase = createClient(
 );
 
 app.use(cors());
-app.use(express.json());
+// AQUI ESTÁ A CORREÇÃO PRINCIPAL: Aumentando o limite para 50MB
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(DIST_DIR));
 
 app.get('/api/contacts', async (req, res) => {
@@ -294,7 +296,7 @@ app.post('/api/research/fetch-url', async (req, res) => {
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s{2,}/g, ' ')
       .trim()
-      .slice(0, 6000);
+      .slice(0, 5000); // Reduzido ligeiramente para dar mais fôlego no contexto geral
     res.json({ text, length: text.length });
   } catch (e) {
     res.status(500).json({ error: `Erro ao buscar URL: ${e.message}` });
@@ -315,7 +317,7 @@ Ao responder siga estritamente as regras abaixo:
 8. CRUZAMENTO DE DADOS: Sempre que o usuário perguntar "quem procurar", "com quem falar" ou solicitar recomendações baseadas no órgão, cruze o conhecimento teórico com a lista de especialistas internos fornecida no contexto e recomende nominalmente as pessoas, citando seus cargos e setores.`;
 
 app.post('/api/research/query', async (req, res) => {
-  const { query, sources, contacts } = req.body;  // AGORA RECEBE CONTACTS DO FRONTEND
+  const { query, sources, contacts } = req.body;
 
   if (!query || typeof query !== 'string') {
     return res.status(400).json({ error: 'Campo obrigatorio: query' });
@@ -328,7 +330,6 @@ app.post('/api/research/query', async (req, res) => {
     });
   }
 
-  // 1. INJEÇÃO DE FONTES EXTERNAS (LINKS/NOTAS)
   let sourcesContext = '';
   if (Array.isArray(sources) && sources.length > 0) {
     const items = sources.map((s, i) => {
@@ -341,7 +342,6 @@ app.post('/api/research/query', async (req, res) => {
     sourcesContext = `\n\n## Fontes de Pesquisa\nUse as informacoes abaixo como contexto adicional. Cite as fontes quando relevante.\n\n${items}`;
   }
 
-  // 2. INJEÇÃO DOS ESPECIALISTAS DO BANCO DE DADOS
   let contactsContext = '';
   if (Array.isArray(contacts) && contacts.length > 0) {
     const contactsList = contacts.map(c => `- ${c.nome} | Cargo: ${c.cargo || 'N/A'} | Departamento: ${c.departamento || 'N/A'} | Email: ${c.email || 'N/A'}`).join('\n');
@@ -365,7 +365,7 @@ app.post('/api/research/query', async (req, res) => {
           { role: 'system', content: finalSystemPrompt },
           { role: 'user', content: query },
         ],
-        max_tokens: 2200, // Aumentado para respostas mais longas e detalhadas
+        max_tokens: 2200,
         temperature: 0.4,
       }),
     });
