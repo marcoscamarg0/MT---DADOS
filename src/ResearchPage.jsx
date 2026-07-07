@@ -169,20 +169,47 @@ function findMentionedDept(query, orgNodes) {
   return orgNodes.find(n => n.sigla && upperTokens.has(n.sigla.toUpperCase())) || null;
 }
 
-/* Retorna apenas contatos da unidade mencionada e de suas
-   subunidades no organograma — nunca de fora do setor pedido. */
+/* Encontra contatos cujo nome (completo ou parcial, ex.: só o
+   primeiro + último nome) aparece explicitamente na pergunta do
+   usuário. Exige pelo menos duas palavras do nome coincidindo (ou
+   o nome inteiro, se tiver só uma palavra) para evitar falsos
+   positivos com nomes muito comuns/curtos. */
+function findMentionedContactsByName(query, contacts) {
+  const normQ = normalizeText(query);
+  return contacts.filter(c => {
+    if (!c.nome) return false;
+    const parts = normalizeText(c.nome).split(/\s+/).filter(p => p.length > 2);
+    if (parts.length === 0) return false;
+    const matchCount = parts.filter(p => normQ.includes(p)).length;
+    return parts.length === 1 ? matchCount === 1 : matchCount >= 2;
+  });
+}
+
+/* Retorna os contatos relevantes para a resposta, cruzando duas
+   fontes de dados do sistema:
+   1) Setor: unidade do organograma mencionada e suas subunidades;
+   2) Nome: pessoa citada diretamente na pergunta.
+   Nunca retorna contatos de fora do que foi pedido. */
 function findRelatedByOrgChart(query, orgNodes, contacts) {
   if (!CONTACT_INTENT_RE.test(query)) return [];
+
+  const byName = findMentionedContactsByName(query, contacts);
+
   const node = findMentionedDept(query, orgNodes);
-  if (!node) return [];
+  let byDept = [];
+  if (node) {
+    const deptKeys = new Set([node.deptKey].filter(Boolean));
+    descendantsOf(orgNodes, node.id).forEach(id => {
+      const child = orgNodes.find(n => n.id === id);
+      if (child?.deptKey) deptKeys.add(child.deptKey);
+    });
+    byDept = contacts.filter(c => deptKeys.has(c.departamento));
+  }
 
-  const deptKeys = new Set([node.deptKey].filter(Boolean));
-  descendantsOf(orgNodes, node.id).forEach(id => {
-    const child = orgNodes.find(n => n.id === id);
-    if (child?.deptKey) deptKeys.add(child.deptKey);
-  });
+  const merged = [...byName];
+  byDept.forEach(c => { if (!merged.some(m => m.id === c.id)) merged.push(c); });
 
-  return contacts.filter(c => deptKeys.has(c.departamento)).slice(0, 12);
+  return merged.slice(0, 12);
 }
 
 function loadHistory() {
@@ -390,8 +417,8 @@ export default function ResearchPage({ contacts = [] }) {
                 <div className="chat-welcome-icon"><Sparkles size={26} /></div>
                 <h1 className="chat-welcome-title">Como posso ajudar hoje?</h1>
                 <p className="chat-welcome-sub">
-                  Tire dúvidas sobre governança de dados, LGPD, ANPD, ECA Digital e o Marco Legal da IA no serviço público.
-                  Para indicar um contato, peça e mencione o setor pelo nome ou sigla — ex.: <em>"quem devo procurar na Secretaria Executiva?"</em>
+                  Tire dúvidas sobre governança de dados, LGPD, ANPD, ECA Digital e o Marco Legal da IA no Ministério dos Transportes.
+                  Para indicar um contato, peça e mencione o setor (nome ou sigla) ou o nome da pessoa — ex.: <em>"quem devo procurar na Secretaria Executiva?"</em> ou <em>"qual o contato de Maria Silva?"</em>
                 </p>
                 <div className="chat-suggestions-grid">
                   {CATEGORIES.map(cat => {
