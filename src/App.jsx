@@ -242,11 +242,22 @@ export default function App() {
     } catch { }
   }, [search, selectedDept]);
 
+  // Lista completa e SEM filtro, usada só pelo cruzamento de dados do
+  // chat de IA — nunca deve depender da busca/departamento selecionados
+  // na aba Diretório, senão a IA só "enxerga" o recorte filtrado da tela.
+  const [allContacts, setAllContacts] = useState([]);
+  const fetchAllContacts = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/contacts`);
+      setAllContacts(await res.json());
+    } catch { }
+  }, []);
+
   const refreshAll = useCallback(async () => {
-    await fetchContacts();
+    await Promise.all([fetchContacts(), fetchAllContacts()]);
     fetch(`${API}/departments`).then(r => r.json()).then(setDepartments).catch(() => {});
     fetch(`${API}/stats`).then(r => r.json()).then(setStats).catch(() => {});
-  }, [fetchContacts]);
+  }, [fetchContacts, fetchAllContacts]);
 
   useEffect(() => {
     fetch(`${API}/departments`).then(r => r.json()).then(setDepartments).catch(() => { });
@@ -255,6 +266,7 @@ export default function App() {
     fetch(`${API}/stats`).then(r => r.json()).then(setStats).catch(() => { });
   }, []);
   useEffect(() => { fetchContacts(); }, [fetchContacts]);
+  useEffect(() => { fetchAllContacts(); }, [fetchAllContacts]);
 
   const toggleSelect = id =>
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -327,7 +339,7 @@ export default function App() {
         });
       }
       setContactModal(null);
-      await fetchContacts();
+      await Promise.all([fetchContacts(), fetchAllContacts()]);
       fetch(`${API}/stats`).then(r => r.json()).then(setStats).catch(() => {});
       fetch(`${API}/departments`).then(r => r.json()).then(setDepartments).catch(() => {});
     } catch { alert('Erro ao salvar contato.'); }
@@ -337,7 +349,7 @@ export default function App() {
     if (!window.confirm('Excluir este contato?')) return;
     try {
       await fetch(`${API}/contacts/${id}`, { method: 'DELETE' });
-      await fetchContacts();
+      await Promise.all([fetchContacts(), fetchAllContacts()]);
       fetch(`${API}/stats`).then(r => r.json()).then(setStats).catch(() => {});
       fetch(`${API}/departments`).then(r => r.json()).then(setDepartments).catch(() => {});
     } catch { alert('Erro ao excluir contato.'); }
@@ -553,7 +565,7 @@ ${emailBody}
         {/* Main */}
         <main className={`main-area${activeTab === 'chart' ? ' full-height' : ''}${activeTab === 'research' ? ' full-height' : ''}`}>
           {activeTab === 'research' && (
-            <ResearchPage contacts={contacts} />
+            <ResearchPage contacts={allContacts} />
           )}
           {activeTab === 'contacts' && (
             <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%' }}>

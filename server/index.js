@@ -395,13 +395,13 @@ app.post('/api/research/query', async (req, res) => {
         'X-Title': 'Portal MT - Assistente de Governanca de Dados',
       },
       body: JSON.stringify({
-        model: 'poolside/laguna-xs-2.1:free',
+        model: 'meta-llama/llama-3.3-70b-instruct:free',
         messages: [
           { role: 'system', content: finalSystemPrompt },
           ...chatHistory,
           { role: 'user', content: query },
         ],
-        max_tokens: 2200,
+        max_tokens: 3000,
         temperature: 0.4,
       }),
     });
