@@ -6,6 +6,7 @@ import {
   BookMarked, Lightbulb, AlertCircle, ChevronDown, Plus, Trash2, Link,
   Send, MessageSquarePlus, PanelRightOpen, PanelRightClose, Bot, User
 } from 'lucide-react';
+import { loadOrgFlat, descendantsOf } from './OrgChart';
 
 const API = '/api';
 const HISTORY_KEY = 'mt-chat-history-v2';
@@ -136,14 +137,52 @@ function TypingIndicator() {
   );
 }
 
-const DATA_KW = ['dado', 'data', 'informação', 'ti', 'tecnologia', 'dgit', 'sistemas', 'lgpd', 'privacidade', 'segurança', 'assessor', 'diretor', 'gerente'];
-function scoreContact(c, q) {
-  const h = `${c.nome} ${c.cargo || ''} ${c.departamento || ''}`.toLowerCase();
-  const qw = q.toLowerCase().split(/\W+/).filter(w => w.length > 3);
-  let s = 0;
-  DATA_KW.forEach(k => { if (h.includes(k)) s += 2; });
-  qw.forEach(w => { if (h.includes(w)) s += 3; });
-  return s;
+/* Só recomendamos contato quando o usuário pede explicitamente,
+   e somente da(s) unidade(s) do organograma que ele mencionar. */
+const CONTACT_INTENT_RE = /(contato|contatos|quem (devo|posso|eu devo|eu poderia)?\s*procurar|com quem (eu )?falo|falar com|indic(a|ar|ação|acao|ado)|respons[aá]vel|quem (é|e|cuida|atua|resolve|trata)|e-?mail de|telefone de|ramal de|quero (o )?contato|me (d[eê]|passa|manda|indica) (o |os |um )?contato)/i;
+
+function normalizeText(s) {
+  return (s || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+/* Encontra o nó do organograma mencionado na pergunta: prioriza o
+   nome completo do setor (menos ambíguo) e, na ausência dele, a
+   sigla — exigindo que apareça como token maiúsculo isolado no
+   texto original para evitar falsos positivos (ex.: "SE" x "se"). */
+function findMentionedDept(query, orgNodes) {
+  const normQ = normalizeText(query);
+  let best = null;
+  let bestLen = 0;
+  orgNodes.forEach(n => {
+    if (!n.nome) return;
+    const normNome = normalizeText(n.nome);
+    if (normNome.length > 4 && normQ.includes(normNome) && normNome.length > bestLen) {
+      best = n;
+      bestLen = normNome.length;
+    }
+  });
+  if (best) return best;
+
+  const upperTokens = new Set((query.match(/\b[A-ZÀ-Ú]{2,}\b/g) || []).map(t => t.toUpperCase()));
+  return orgNodes.find(n => n.sigla && upperTokens.has(n.sigla.toUpperCase())) || null;
+}
+
+/* Retorna apenas contatos da unidade mencionada e de suas
+   subunidades no organograma — nunca de fora do setor pedido. */
+function findRelatedByOrgChart(query, orgNodes, contacts) {
+  if (!CONTACT_INTENT_RE.test(query)) return [];
+  const node = findMentionedDept(query, orgNodes);
+  if (!node) return [];
+
+  const deptKeys = new Set([node.deptKey].filter(Boolean));
+  descendantsOf(orgNodes, node.id).forEach(id => {
+    const child = orgNodes.find(n => n.id === id);
+    if (child?.deptKey) deptKeys.add(child.deptKey);
+  });
+
+  return contacts.filter(c => deptKeys.has(c.departamento)).slice(0, 12);
 }
 
 function loadHistory() {
@@ -165,6 +204,9 @@ export default function ResearchPage({ contacts = [] }) {
   const [selectedSources, setSelectedSources] = useState(new Set());
   const [newSource, setNewSource] = useState({ titulo: '', url: '', notas: '' });
   const [isSaving, setIsSaving] = useState(false);
+
+  const [orgNodes, setOrgNodes] = useState([]);
+  useEffect(() => { setOrgNodes(loadOrgFlat()); }, []);
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -197,10 +239,7 @@ export default function ResearchPage({ contacts = [] }) {
     }
   }, [input]);
 
-  const findRelated = useCallback((q) =>
-    contacts.map(c => ({ ...c, score: scoreContact(c, q) }))
-      .filter(c => c.score > 0).sort((a, b) => b.score - a.score).slice(0, 6),
-    [contacts]);
+  const findRelated = useCallback((q) => findRelatedByOrgChart(q, orgNodes, contacts), [orgNodes, contacts]);
 
   const sendMessage = useCallback(async (text) => {
     const q = text.trim();
@@ -351,8 +390,8 @@ export default function ResearchPage({ contacts = [] }) {
                 <div className="chat-welcome-icon"><Sparkles size={26} /></div>
                 <h1 className="chat-welcome-title">Como posso ajudar hoje?</h1>
                 <p className="chat-welcome-sub">
-                  Tire dúvidas sobre governança de dados, LGPD, ANPD, ECA Digital e o Marco Legal da IA no serviço público —
-                  com cruzamento automático de especialistas do seu órgão.
+                  Tire dúvidas sobre governança de dados, LGPD, ANPD, ECA Digital e o Marco Legal da IA no serviço público.
+                  Para indicar um contato, peça e mencione o setor pelo nome ou sigla — ex.: <em>"quem devo procurar na Secretaria Executiva?"</em>
                 </p>
                 <div className="chat-suggestions-grid">
                   {CATEGORIES.map(cat => {

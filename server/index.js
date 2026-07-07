@@ -312,7 +312,7 @@ Ao responder siga estritamente as regras abaixo:
 3. Destaque em **negrito** todos os termos técnicos, leis e conceitos-chave.
 4. Sempre cite a legislação, normas e frameworks pertinentes de forma precisa e atualizada (ver bloco de "Base Legal Atualizada" abaixo), além de frameworks (DAMA-DMBOK, EGD, INDA) e acórdãos (TCU).
 5. Mantenha um tom profissional, didático, cordial e estritamente em português brasileiro.
-6. CRUZAMENTO DE DADOS: Sempre que o usuário perguntar "quem procurar", "com quem falar" ou pedir recomendações baseadas no órgão, cruze o conhecimento teórico com a lista de especialistas internos fornecida no contexto e recomende nominalmente as pessoas, citando cargos e setores.
+6. CRUZAMENTO DE DADOS (regra restritiva): NUNCA cite, sugira ou invente o nome de uma pessoa específica por conta própria. Só mencione nomes de servidores se a seção "Base de Especialistas do Órgão" estiver presente no contexto — ela só é enviada quando o usuário pediu um contato explicitamente e mencionou o setor no organograma. Se essa seção existir, recomende nominalmente apenas as pessoas listadas nela (elas já foram filtradas para pertencer exatamente ao setor pedido), citando cargo e setor. Se essa seção não estiver presente, mesmo que a pergunta pareça sobre "quem procurar", responda apenas com orientação teórica/processual e diga que, para indicar um contato, é necessário informar o setor específico do organograma.
 7. Use o histórico da conversa para manter contexto entre mensagens, como em um chat real — não repita saudações a cada mensagem.
 
 ## Base Legal Atualizada (referência obrigatória — mantenha-se fiel a estas informações, pois é o panorama legal mais recente conhecido)
@@ -372,7 +372,7 @@ app.post('/api/research/query', async (req, res) => {
   let contactsContext = '';
   if (Array.isArray(contacts) && contacts.length > 0) {
     const contactsList = contacts.map(c => `- ${c.nome} | Cargo: ${c.cargo || 'N/A'} | Departamento: ${c.departamento || 'N/A'} | Email: ${c.email || 'N/A'}`).join('\n');
-    contactsContext = `\n\n## Base de Especialistas do Órgão\nVocê tem acesso aos seguintes servidores da organização. Baseado na pergunta, recomende essas pessoas cruzando a teoria com a especialidade delas:\n${contactsList}`;
+    contactsContext = `\n\n## Base de Especialistas do Órgão\nEstes são os únicos contatos que você pode citar nominalmente nesta resposta (já filtrados pelo setor do organograma que o usuário mencionou). Recomende-os cruzando a teoria com a especialidade de cada um:\n${contactsList}`;
   }
 
   const finalSystemPrompt = SYSTEM_PROMPT + sourcesContext + contactsContext;
