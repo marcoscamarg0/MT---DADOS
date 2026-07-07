@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Search, Users, Building2, Mail, Phone, CheckSquare, Square, LayoutGrid, List, Download, X, Copy, FileDown, LayoutTemplate, Check, Send, Info, Network, Plus, Save, Trash2, Pencil, Moon, Sun, Loader } from 'lucide-react';
+import { Search, Users, Building2, Mail, Phone, CheckSquare, Square, LayoutGrid, List, Download, X, Copy, FileDown, LayoutTemplate, Check, Send, Info, Network, Plus, Save, Trash2, Pencil, Moon, Sun, Loader, BookOpen } from 'lucide-react';
 import OrgChart, { loadOrgFlat, TIPO_LABELS, THEME, ancestorsOf, saveOrgFlat, treeToFlat, DEFAULT_ORG_TREE } from './OrgChart';
 import { EMAIL_PRESETS, openMailClient } from './emailTemplates';
+import ResearchPage from './ResearchPage';
 import './index.css';
 
 const API = '/api';
@@ -483,6 +484,12 @@ ${emailBody}
           >
             <Building2 size={15} /> Organograma
           </button>
+          <button
+            className={`nav-tab${activeTab === 'research' ? ' active' : ''}`}
+            onClick={() => setActiveTab('research')}
+          >
+            <BookOpen size={15} /> Pesquisas
+          </button>
         </div>
 
         <button
@@ -544,7 +551,10 @@ ${emailBody}
         )}
 
         {/* Main */}
-        <main className={`main-area${activeTab === 'chart' ? ' full-height' : ''}`}>
+        <main className={`main-area${activeTab === 'chart' ? ' full-height' : ''}${activeTab === 'research' ? ' full-height' : ''}`}>
+          {activeTab === 'research' && (
+            <ResearchPage contacts={contacts} />
+          )}
           {activeTab === 'contacts' && (
             <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%' }}>
 

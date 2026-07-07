@@ -250,12 +250,202 @@ app.post('/api/send-email', async (req, res) => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════
+   RESEARCH SOURCES — Fontes personalizadas (notas + links)
+══════════════════════════════════════════════════════════════════════════════ */
+
+// GET all sources
+app.get('/api/research/sources', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('research_sources')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (e) {
+    // Tabela pode não existir ainda
+    if (e.code === '42P01') {
+      return res.json([]); // retorna vazio enquanto tabela não existe
+    }
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST create source
+app.post('/api/research/sources', async (req, res) => {
+  try {
+    const { titulo, url, notas, tipo } = req.body;
+    if (!titulo) return res.status(400).json({ error: 'titulo obrigatorio' });
+    const { data, error } = await supabase
+      .from('research_sources')
+      .insert({ titulo, url: url || null, notas: notas || null, tipo: tipo || 'nota' })
+      .select()
+      .single();
+    if (error) throw error;
+    res.status(201).json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PUT update source
+app.put('/api/research/sources/:id', async (req, res) => {
+  try {
+    const { titulo, url, notas, tipo } = req.body;
+    const { data, error } = await supabase
+      .from('research_sources')
+      .update({ titulo, url, notas, tipo })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE source
+app.delete('/api/research/sources/:id', async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from('research_sources')
+      .delete()
+      .eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST fetch URL content (para preview e armazenamento)
+app.post('/api/research/fetch-url', async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: 'url obrigatoria' });
+  try {
+    const r = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PortalMT-Bot/1.0)' },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!r.ok) return res.status(502).json({ error: `URL retornou ${r.status}` });
+    const html = await r.text();
+    // Extrai texto limpo: remove tags HTML, scripts e estilos
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+      .slice(0, 6000); // máx 6k chars para não estourar o contexto
+    res.json({ text, length: text.length });
+  } catch (e) {
+    res.status(500).json({ error: `Erro ao buscar URL: ${e.message}` });
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   RESEARCH — IA via OpenRouter (free tier)
+══════════════════════════════════════════════════════════════════════════════ */
+
+const SYSTEM_PROMPT = `Você é um especialista sênior em Gestão e Governança de Dados no setor público federal brasileiro.
+Seu conhecimento inclui:
+- LGPD (Lei 13.709/2018) aplicada à Administração Pública Federal
+- Estratégia de Governo Digital (EGD) e Política de Dados Abertos
+- DAMA-DMBOK, modelos de maturidade de dados (CMM, CMMI, DCAM, DAMA)
+- Infraestrutura Nacional de Dados Abertos (INDA) e Decreto 8.777/2016
+- Acórdãos do TCU sobre governança de TI e dados (ex.: 2.569/2020, 1.628/2019)
+- Frameworks de governança da CGU, ANPD e Ministério da Gestão
+- Melhores práticas internacionais adaptadas ao contexto brasileiro (COBIT, ISO 8000, ISO 27001)
+- Experiências dos ministérios, autarquias e empresas públicas federais
+
+Ao responder:
+1. Seja objetivo e prático — foque em passos concretos aplicáveis
+2. Cite legislação, acórdãos e frameworks específicos quando relevante
+3. Estruture a resposta com seções claras usando markdown (## e ###)
+4. Mencione desafios comuns no setor público e como superá-los
+5. Use linguagem formal mas acessível
+6. Responda sempre em português brasileiro`;
+
+// POST /api/research/query
+app.post('/api/research/query', async (req, res) => {
+  const { query, sources } = req.body;  // sources = [{ titulo, url, notas, conteudo_url }]
+  if (!query || typeof query !== 'string') {
+    return res.status(400).json({ error: 'Campo obrigatorio: query' });
+  }
+
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    return res.status(503).json({
+      error: 'OPENROUTER_API_KEY nao configurada. Adicione a chave no arquivo .env e reinicie o servidor.',
+    });
+  }
+
+  // Monta bloco de contexto com fontes personalizadas
+  let sourcesContext = '';
+  if (Array.isArray(sources) && sources.length > 0) {
+    const items = sources.map((s, i) => {
+      let block = `[Fonte ${i + 1}] "${s.titulo}"`;
+      if (s.url) block += `\nURL: ${s.url}`;
+      if (s.notas) block += `\nNotas: ${s.notas}`;
+      if (s.conteudo_url) block += `\nConteudo da pagina:\n${s.conteudo_url.slice(0, 2000)}`;
+      return block;
+    }).join('\n\n---\n\n');
+    sourcesContext = `\n\n## Fontes Personalizadas do Usuario\nUse as informacoes abaixo como contexto adicional para sua resposta. Cite as fontes quando relevante.\n\n${items}`;
+  }
+
+  const finalSystemPrompt = SYSTEM_PROMPT + sourcesContext;
+
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://portal.mt.gov.br',
+        'X-Title': 'Portal MT - Repositorio de Pesquisas',
+      },
+      body: JSON.stringify({
+        model: 'poolside/laguna-xs-2.1:free',
+        messages: [
+          { role: 'system', content: finalSystemPrompt },
+          { role: 'user', content: query },
+        ],
+        max_tokens: 1800,
+        temperature: 0.45,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('OpenRouter error:', response.status, errText);
+      return res.status(502).json({ error: `Erro na API OpenRouter: ${response.status}` });
+    }
+
+    const data = await response.json();
+    const answer = data.choices?.[0]?.message?.content;
+    if (!answer) {
+      return res.status(502).json({ error: 'Resposta vazia da IA. Tente novamente.' });
+    }
+
+    const srcCount = sources?.length || 0;
+    console.log(`Pesquisa IA [Laguna XS-2.1] (+${srcCount} fontes): "${query.slice(0, 60)}..." -> ${answer.length} chars`);
+    res.json({ answer, model: data.model });
+  } catch (error) {
+    console.error('Erro ao chamar OpenRouter:', error.message);
+    res.status(500).json({ error: error.message });
+
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
    SPA FALLBACK
 ══════════════════════════════════════════════════════════════════════════════ */
 
 app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(`${DIST_DIR}/index.html`);
 });
+
 
 /* ══════════════════════════════════════════════════════════════════════════════
    STARTUP
