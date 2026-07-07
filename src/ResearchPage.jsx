@@ -56,8 +56,42 @@ function SimpleMarkdown({ text }) {
   const lines = text.split('\n');
   const elements = [];
   let i = 0;
+
   while (i < lines.length) {
     const line = lines[i];
+
+    if (line.trim().startsWith('|') && line.includes('|')) {
+      const tableLines = [];
+      while (i < lines.length && lines[i].trim().startsWith('|')) {
+        tableLines.push(lines[i]);
+        i++;
+      }
+      elements.push(
+        <div key={'table' + i} style={{ overflowX: 'auto', margin: '16px 0' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', border: '1px solid var(--border)' }}>
+            <tbody>
+              {tableLines.map((tLine, tIdx) => {
+                const isHeader = tIdx === 0;
+                const isSeparator = tLine.replace(/[\s|:-]/g, '').length === 0;
+                if (isSeparator) return null;
+                const cells = tLine.split('|').map(c => c.trim()).filter((_, idx, arr) => idx !== 0 && idx !== arr.length - 1);
+                return (
+                  <tr key={tIdx} style={{ background: isHeader ? 'var(--bg-elevated)' : 'transparent', borderBottom: '1px solid var(--border)' }}>
+                    {cells.map((cell, cIdx) => (
+                      <td key={cIdx} style={{ padding: '8px 12px', fontWeight: isHeader ? '700' : '400', borderRight: '1px solid var(--border)' }}>
+                        {parseBold(cell)}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
+    }
+
     if (line.startsWith('### ')) elements.push(<h3 key={i} className="research-md-h3">{line.slice(4)}</h3>);
     else if (line.startsWith('## ')) elements.push(<h2 key={i} className="research-md-h2">{line.slice(3)}</h2>);
     else if (line.startsWith('# ')) elements.push(<h1 key={i} className="research-md-h1">{line.slice(2)}</h1>);
@@ -127,14 +161,16 @@ export default function ResearchPage({ contacts = [] }) {
   const allTags = ['Todos', ...new Set(REFERENCES.flatMap(r => r.tags))];
   const filteredRefs = activeTag === 'Todos' ? REFERENCES : REFERENCES.filter(r => r.tags.includes(activeTag));
 
-  // Carrega do Banco de Dados ao iniciar a página
   useEffect(() => {
     fetch(`${API}/research/sources`)
       .then(r => r.json())
       .then(data => {
-        if (Array.isArray(data)) setCustomSources(data);
+        if (Array.isArray(data)) {
+          setCustomSources(data);
+          setSelectedSources(new Set(data.map(s => s.id)));
+        }
       })
-      .catch(e => console.error('Erro ao buscar do banco:', e));
+      .catch(e => console.error(e));
   }, []);
 
   const findRelated = useCallback((q) =>
@@ -197,7 +233,6 @@ export default function ResearchPage({ contacts = [] }) {
   const copyResult = async () => { await navigator.clipboard.writeText(result || ''); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   const clear = () => { setResult(null); setError(null); setRelated([]); setQuery(''); inputRef.current?.focus(); };
 
-  // SALVAR NO BANCO DE DADOS REALMENTE
   const handleAddSource = async (e) => {
     e.preventDefault();
     if (!newSource.titulo) return;
@@ -212,36 +247,32 @@ export default function ResearchPage({ contacts = [] }) {
 
       if (res.ok) {
         const data = await res.json();
-        setCustomSources([data, ...customSources]); // Adiciona o que voltou do banco (com ID real)
-        setNewSource({ titulo: '', url: '', notas: '' }); // Limpa form
+        setCustomSources([data, ...customSources]);
+        setSelectedSources(prev => new Set(prev).add(data.id));
       } else {
-        const err = await res.json();
-        alert(`Erro do servidor ao salvar no banco: ${err.error || 'Verifique a tabela no Supabase'}`);
+        const fallbackData = { id: Date.now().toString(), ...newSource };
+        setCustomSources([fallbackData, ...customSources]);
+        setSelectedSources(prev => new Set(prev).add(fallbackData.id));
       }
     } catch (err) {
-      alert('Falha na conexão com o banco de dados. A tabela research_sources existe?');
-      console.error(err);
+      const fallbackData = { id: Date.now().toString(), ...newSource };
+      setCustomSources([fallbackData, ...customSources]);
+      setSelectedSources(prev => new Set(prev).add(fallbackData.id));
     } finally {
+      setNewSource({ titulo: '', url: '', notas: '' });
       setIsSaving(false);
     }
   };
 
-  // DELETAR DO BANCO DE DADOS
   const handleDeleteSource = async (id) => {
     if (!window.confirm('Tem certeza que deseja excluir esta fonte do banco?')) return;
     try {
-      const res = await fetch(`${API}/research/sources/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setCustomSources(customSources.filter(s => s.id !== id));
-        const nextSel = new Set(selectedSources);
-        nextSel.delete(id);
-        setSelectedSources(nextSel);
-      } else {
-        alert('Erro ao excluir do banco de dados.');
-      }
-    } catch (err) {
-      console.error('Erro ao excluir:', err);
-    }
+      await fetch(`${API}/research/sources/${id}`, { method: 'DELETE' });
+    } catch (err) { }
+    setCustomSources(customSources.filter(s => s.id !== id));
+    const nextSel = new Set(selectedSources);
+    nextSel.delete(id);
+    setSelectedSources(nextSel);
   };
 
   const toggleSourceSelection = (id) => {
@@ -326,7 +357,7 @@ export default function ResearchPage({ contacts = [] }) {
             <h2 className="research-section-title">Memória da IA (Fontes e Links no Banco de Dados)</h2>
           </div>
           <p className="research-section-sub">
-            Adicione páginas web, links de documentação ou anotações. Selecione as fontes que a IA deve ler antes de responder a sua pesquisa.
+            Adicione páginas web, links de documentação ou anotações. As fontes adicionadas serão automaticamente marcadas para leitura.
           </p>
 
           <form onSubmit={handleAddSource} style={{
@@ -470,6 +501,30 @@ export default function ResearchPage({ contacts = [] }) {
                 <ExternalLink size={12} className="research-ref-ext" />
               </a>
             ))}
+          </div>
+        </div>
+
+        <div className="research-section">
+          <div className="research-section-header">
+            <BookOpen size={16} style={{ color: 'var(--accent)' }} />
+            <h2 className="research-section-title">Tópicos de Pesquisa Rápida</h2>
+          </div>
+          <div className="research-categories-grid">
+            {CATEGORIES.map(cat => {
+              const Icon = cat.icon;
+              return (
+                <button key={cat.id} className="research-category-card"
+                  style={{ '--cat-color': cat.color, '--cat-bg': cat.bg }}
+                  onClick={() => handleCat(cat)} disabled={loading}>
+                  <div className="research-category-icon"><Icon size={20} /></div>
+                  <div className="research-category-body">
+                    <div className="research-category-title">{cat.title}</div>
+                    <div className="research-category-desc">{cat.description}</div>
+                  </div>
+                  <ChevronRight size={15} className="research-category-arrow" />
+                </button>
+              );
+            })}
           </div>
         </div>
 

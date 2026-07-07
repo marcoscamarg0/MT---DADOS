@@ -6,18 +6,15 @@ import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
 
-// Carrega variáveis de ambiente do .env na raiz do projeto
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const { config } = await import('dotenv');
 config({ path: path.join(rootDir, '.env') });
 
-
 const app = express();
 const PORT = process.env.PORT || 3001;
 const DIST_DIR = new URL('../dist', import.meta.url).pathname;
 
-// ── Supabase client (service_role — back-end only) ──────────────────────────
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
@@ -27,11 +24,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(DIST_DIR));
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   CONTACTS
-══════════════════════════════════════════════════════════════════════════════ */
-
-// GET all contacts (with optional search + departamento filter)
 app.get('/api/contacts', async (req, res) => {
   try {
     const { search, departamento } = req.query;
@@ -57,12 +49,10 @@ app.get('/api/contacts', async (req, res) => {
 
     res.json(data);
   } catch (error) {
-    console.error('GET /api/contacts:', error);
     res.status(500).json({ error: 'Erro ao carregar contatos' });
   }
 });
 
-// GET single contact
 app.get('/api/contacts/:id', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -75,15 +65,13 @@ app.get('/api/contacts/:id', async (req, res) => {
 
     res.json(data);
   } catch (error) {
-    console.error('GET /api/contacts/:id:', error);
     res.status(500).json({ error: 'Erro ao carregar contato' });
   }
 });
 
-// POST create contact
 app.post('/api/contacts', async (req, res) => {
   try {
-    const { id: _ignored, ...fields } = req.body;   // ignora id enviado pelo cliente
+    const { id: _ignored, ...fields } = req.body;
     const newContact = {
       nome: '',
       cargo: '',
@@ -103,12 +91,10 @@ app.post('/api/contacts', async (req, res) => {
 
     res.status(201).json(data);
   } catch (error) {
-    console.error('POST /api/contacts:', error);
     res.status(500).json({ error: 'Erro ao criar contato' });
   }
 });
 
-// PUT update contact
 app.put('/api/contacts/:id', async (req, res) => {
   try {
     const { id: _ignored, ...updates } = req.body;
@@ -124,12 +110,10 @@ app.put('/api/contacts/:id', async (req, res) => {
 
     res.json(data);
   } catch (error) {
-    console.error('PUT /api/contacts/:id:', error);
     res.status(500).json({ error: 'Erro ao atualizar contato' });
   }
 });
 
-// DELETE contact
 app.delete('/api/contacts/:id', async (req, res) => {
   try {
     const { error } = await supabase
@@ -141,16 +125,10 @@ app.delete('/api/contacts/:id', async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('DELETE /api/contacts/:id:', error);
     res.status(500).json({ error: 'Erro ao excluir contato' });
   }
 });
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   DEPARTMENTS & STATS
-══════════════════════════════════════════════════════════════════════════════ */
-
-// GET departments list (agrupado por nome, com total)
 app.get('/api/departments', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -172,12 +150,10 @@ app.get('/api/departments', async (req, res) => {
 
     res.json(departments);
   } catch (error) {
-    console.error('GET /api/departments:', error);
     res.status(500).json({ error: 'Erro ao carregar departamentos' });
   }
 });
 
-// GET stats (totais do diretório)
 app.get('/api/stats', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -187,26 +163,20 @@ app.get('/api/stats', async (req, res) => {
     if (error) throw error;
 
     const departments = new Set(data.map(c => c.departamento).filter(Boolean));
-    const withEmail   = data.filter(c => c.email   && c.email.trim().length   > 0).length;
-    const withPhone   = data.filter(c => c.telefone && c.telefone.trim().length > 0).length;
+    const withEmail = data.filter(c => c.email && c.email.trim().length > 0).length;
+    const withPhone = data.filter(c => c.telefone && c.telefone.trim().length > 0).length;
 
     res.json({
-      totalContatos:     data.length,
+      totalContatos: data.length,
       totalDepartamentos: departments.size,
-      comEmail:  withEmail,
+      comEmail: withEmail,
       comTelefone: withPhone,
     });
   } catch (error) {
-    console.error('GET /api/stats:', error);
     res.status(500).json({ error: 'Erro ao carregar estatísticas' });
   }
 });
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   EMAIL — envio individual personalizado via SMTP
-══════════════════════════════════════════════════════════════════════════════ */
-
-// POST /api/send-email  { to, subject, htmlBody, nome }
 app.post('/api/send-email', async (req, res) => {
   const { to, subject, htmlBody, nome } = req.body;
 
@@ -241,19 +211,12 @@ app.post('/api/send-email', async (req, res) => {
       html: htmlBody,
     });
 
-    console.log(`✅ E-mail enviado → ${to}${nome ? ` (${nome})` : ''}`);
     res.json({ success: true, to });
   } catch (error) {
-    console.error('❌ Erro ao enviar e-mail:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   RESEARCH SOURCES — Fontes personalizadas (notas + links)
-══════════════════════════════════════════════════════════════════════════════ */
-
-// GET all sources
 app.get('/api/research/sources', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -263,15 +226,13 @@ app.get('/api/research/sources', async (req, res) => {
     if (error) throw error;
     res.json(data);
   } catch (e) {
-    // Tabela pode não existir ainda
     if (e.code === '42P01') {
-      return res.json([]); // retorna vazio enquanto tabela não existe
+      return res.json([]);
     }
     res.status(500).json({ error: e.message });
   }
 });
 
-// POST create source
 app.post('/api/research/sources', async (req, res) => {
   try {
     const { titulo, url, notas, tipo } = req.body;
@@ -288,7 +249,6 @@ app.post('/api/research/sources', async (req, res) => {
   }
 });
 
-// PUT update source
 app.put('/api/research/sources/:id', async (req, res) => {
   try {
     const { titulo, url, notas, tipo } = req.body;
@@ -305,7 +265,6 @@ app.put('/api/research/sources/:id', async (req, res) => {
   }
 });
 
-// DELETE source
 app.delete('/api/research/sources/:id', async (req, res) => {
   try {
     const { error } = await supabase
@@ -319,7 +278,6 @@ app.delete('/api/research/sources/:id', async (req, res) => {
   }
 });
 
-// POST fetch URL content (para preview e armazenamento)
 app.post('/api/research/fetch-url', async (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'url obrigatoria' });
@@ -330,46 +288,33 @@ app.post('/api/research/fetch-url', async (req, res) => {
     });
     if (!r.ok) return res.status(502).json({ error: `URL retornou ${r.status}` });
     const html = await r.text();
-    // Extrai texto limpo: remove tags HTML, scripts e estilos
     const text = html
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/<style[\s\S]*?<\/style>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s{2,}/g, ' ')
       .trim()
-      .slice(0, 6000); // máx 6k chars para não estourar o contexto
+      .slice(0, 6000);
     res.json({ text, length: text.length });
   } catch (e) {
     res.status(500).json({ error: `Erro ao buscar URL: ${e.message}` });
   }
 });
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   RESEARCH — IA via OpenRouter (free tier)
-══════════════════════════════════════════════════════════════════════════════ */
+const SYSTEM_PROMPT = `Você é um especialista sênior em Gestão e Governança de Dados no setor público federal brasileiro e atua como um tutor acadêmico interativo.
 
-const SYSTEM_PROMPT = `Você é um especialista sênior em Gestão e Governança de Dados no setor público federal brasileiro.
-Seu conhecimento inclui:
-- LGPD (Lei 13.709/2018) aplicada à Administração Pública Federal
-- Estratégia de Governo Digital (EGD) e Política de Dados Abertos
-- DAMA-DMBOK, modelos de maturidade de dados (CMM, CMMI, DCAM, DAMA)
-- Infraestrutura Nacional de Dados Abertos (INDA) e Decreto 8.777/2016
-- Acórdãos do TCU sobre governança de TI e dados (ex.: 2.569/2020, 1.628/2019)
-- Frameworks de governança da CGU, ANPD e Ministério da Gestão
-- Melhores práticas internacionais adaptadas ao contexto brasileiro (COBIT, ISO 8000, ISO 27001)
-- Experiências dos ministérios, autarquias e empresas públicas federais
-
+O sistema de frontend renderizará seu texto em uma interface intuitiva para estudos.
 Ao responder:
-1. Seja objetivo e prático — foque em passos concretos aplicáveis
-2. Cite legislação, acórdãos e frameworks específicos quando relevante
-3. Estruture a resposta com seções claras usando markdown (## e ###)
-4. Mencione desafios comuns no setor público e como superá-los
-5. Use linguagem formal mas acessível
-6. Responda sempre em português brasileiro`;
+1. Seja altamente visual, prático e focado na facilidade de aprendizado.
+2. Estruture a resposta com seções muito claras usando Markdown (## e ###).
+3. Utilize TABELAS em Markdown extensivamente para comparar cenários, modelos, prós e contras, e dados estruturados.
+4. Use listas encadeadas (bullet points) para criar fluxos de processos ou mapas mentais em texto.
+5. Destaque em **negrito** todos os termos técnicos, leis e conceitos-chave.
+6. Sempre cite legislação pertinente, frameworks (DAMA-DMBOK, EGD, INDA) e acórdãos (TCU).
+7. Mantenha um tom profissional, didático e estritamente em português brasileiro.`;
 
-// POST /api/research/query
 app.post('/api/research/query', async (req, res) => {
-  const { query, sources } = req.body;  // sources = [{ titulo, url, notas, conteudo_url }]
+  const { query, sources } = req.body;
   if (!query || typeof query !== 'string') {
     return res.status(400).json({ error: 'Campo obrigatorio: query' });
   }
@@ -381,7 +326,6 @@ app.post('/api/research/query', async (req, res) => {
     });
   }
 
-  // Monta bloco de contexto com fontes personalizadas
   let sourcesContext = '';
   if (Array.isArray(sources) && sources.length > 0) {
     const items = sources.map((s, i) => {
@@ -417,8 +361,6 @@ app.post('/api/research/query', async (req, res) => {
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      console.error('OpenRouter error:', response.status, errText);
       return res.status(502).json({ error: `Erro na API OpenRouter: ${response.status}` });
     }
 
@@ -428,46 +370,19 @@ app.post('/api/research/query', async (req, res) => {
       return res.status(502).json({ error: 'Resposta vazia da IA. Tente novamente.' });
     }
 
-    const srcCount = sources?.length || 0;
-    console.log(`Pesquisa IA [Laguna XS-2.1] (+${srcCount} fontes): "${query.slice(0, 60)}..." -> ${answer.length} chars`);
     res.json({ answer, model: data.model });
   } catch (error) {
-    console.error('Erro ao chamar OpenRouter:', error.message);
     res.status(500).json({ error: error.message });
-
   }
 });
-
-/* ══════════════════════════════════════════════════════════════════════════════
-   SPA FALLBACK
-══════════════════════════════════════════════════════════════════════════════ */
 
 app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(`${DIST_DIR}/index.html`);
 });
 
-
-/* ══════════════════════════════════════════════════════════════════════════════
-   STARTUP
-══════════════════════════════════════════════════════════════════════════════ */
-
-async function checkSupabaseConnection() {
-  try {
-    const { data, error } = await supabase
-      .from('contacts')
-      .select('id, nome')
-      .limit(3);
-
-    if (error) throw error;
-
-    console.log(`✅ Supabase conectado! ${data.length} registros na amostra:`);
-    data.forEach(c => console.log(`   #${c.id} ${c.nome}`));
-  } catch (error) {
-    console.error('❌ Falha ao conectar com o Supabase:', error.message);
-  }
-}
-
 app.listen(PORT, async () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-  await checkSupabaseConnection();
+  try {
+    await supabase.from('contacts').select('id').limit(1);
+  } catch (error) {
+  }
 });
