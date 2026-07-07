@@ -395,7 +395,7 @@ app.post('/api/research/query', async (req, res) => {
         'X-Title': 'Portal MT - Assistente de Governanca de Dados',
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
+        model: 'poolside/laguna-xs-2.1:free',
         messages: [
           { role: 'system', content: finalSystemPrompt },
           ...chatHistory,
@@ -403,6 +403,7 @@ app.post('/api/research/query', async (req, res) => {
         ],
         max_tokens: 3000,
         temperature: 0.4,
+        reasoning: { effort: 'medium' },
       }),
     });
 
@@ -411,10 +412,16 @@ app.post('/api/research/query', async (req, res) => {
     }
 
     const data = await response.json();
-    const answer = data.choices?.[0]?.message?.content;
+    let answer = data.choices?.[0]?.message?.content;
     if (!answer) {
       return res.status(502).json({ error: 'Resposta vazia da IA. Tente novamente.' });
     }
+
+    // Laguna é um modelo com raciocínio nativo ("thinking"); em alguns casos
+    // o provedor pode deixar vazar o bloco de raciocínio dentro do próprio
+    // texto da resposta. Removemos isso por segurança, para o chat nunca
+    // mostrar rascunho de pensamento ao usuário.
+    answer = answer.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
     res.json({ answer, model: data.model });
   } catch (error) {
