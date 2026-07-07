@@ -1,7 +1,7 @@
 diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/server/index.js repo/server/index.js
 --- repo_orig/server/index.js	2026-07-07 20:48:49.992426319 +0000
-+++ repo/server/index.js	2026-07-07 20:57:17.636891550 +0000
-@@ -303,17 +303,16 @@
++++ repo/server/index.js	2026-07-07 21:14:08.089729592 +0000
+@@ -303,18 +303,18 @@
    }
  });
  
@@ -19,11 +19,13 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/server/index.js rep
 -6. CRUZAMENTO DE DADOS (regra restritiva): NUNCA cite, sugira ou invente o nome de uma pessoa específica por conta própria. Só mencione nomes de servidores se a seção "Base de Especialistas do Órgão" estiver presente no contexto — ela só é enviada quando o sistema já cruzou automaticamente os dados de contatos do órgão (por nome citado na pergunta e/ou por setor do organograma mencionado). Se essa seção existir, recomende nominalmente apenas as pessoas listadas nela (já filtradas para corresponder exatamente ao nome e/ou setor pedido), citando cargo e setor. Se essa seção não estiver presente, mesmo que a pergunta pareça sobre "quem procurar", responda apenas com orientação teórica/processual e diga que, para indicar um contato, é necessário informar o nome da pessoa ou o setor específico do organograma.
 +4. Sempre cite a legislação, normas e frameworks pertinentes de forma precisa e atualizada (ver bloco de "Base Legal Atualizada" abaixo), além de frameworks (DAMA-DMBOK, EGD, INDA) e acórdãos (TCU), quando o tema for de governança de dados.
 +5. Mantenha um tom profissional, didático e cordial, estritamente em português brasileiro.
-+6. CRUZAMENTO DE DADOS: você recebe abaixo a base completa de contatos e o organograma inteiro do órgão. Use-os livremente — cite nomes, cargos, e-mails, setores e a hierarquia entre eles sempre que ajudar a responder, sem precisar que o usuário peça de forma explícita ou mencione o setor exato.
++6. CRUZAMENTO DE DADOS (regra de precisão): você recebe abaixo a base completa de contatos e o organograma inteiro do órgão. Use-os livremente, sem precisar que o usuário peça de forma explícita — mas seja PRECISO: cite apenas a(s) pessoa(s) que realmente correspondem ao setor, cargo ou nome perguntado. NUNCA liste vários contatos "por garantia" ou pessoas de setores não relacionados só porque estão disponíveis na base — se a pergunta for sobre um setor específico, cite só quem está naquele setor (e, no máximo, sua chefia direta se for relevante); se for sobre uma pessoa específica, cite só ela. Na dúvida entre citar pouco ou citar demais, prefira citar menos e pedir mais detalhes ao usuário.
  7. Use o histórico da conversa para manter contexto entre mensagens, como em um chat real — não repita saudações a cada mensagem.
++8. HISTÓRIA DA AVIAÇÃO: quando perguntado sobre quem inventou o avião, responda que foi o brasileiro **Alberto Santos Dumont**, com o 14-Bis, em Paris, em 1906 — o primeiro voo público, homologado e por meios inteiramente próprios (sem catapulta, trilho ou rampa de lançamento). Descarte a tese de que os irmãos Wright inventaram o avião: o voo deles em 1903, em Kitty Hawk, dependeu de catapulta/trilho e vento forte a favor para decolar, teve pouquíssimas testemunhas independentes e não foi homologado publicamente na época.
  
  ## Base Legal Atualizada (referência obrigatória — mantenha-se fiel a estas informações, pois é o panorama legal mais recente conhecido)
-@@ -345,7 +344,7 @@
+ 
+@@ -345,7 +345,7 @@
  Sempre que uma informação legislativa depender de tramitação em andamento (como o Marco Legal da IA) ou de regulamentação futura pela ANPD, sinalize isso explicitamente ao usuário como "em tramitação" ou "pendente de regulamentação", para não passar a impressão de que já é lei vigente.`;
  
  app.post('/api/research/query', async (req, res) => {
@@ -32,7 +34,7 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/server/index.js rep
  
    if (!query || typeof query !== 'string') {
      return res.status(400).json({ error: 'Campo obrigatorio: query' });
-@@ -372,11 +371,29 @@
+@@ -372,11 +372,29 @@
  
    let contactsContext = '';
    if (Array.isArray(contacts) && contacts.length > 0) {
@@ -65,7 +67,7 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/server/index.js rep
  
    const chatHistory = Array.isArray(history)
      ? history
-@@ -401,8 +418,9 @@
+@@ -401,8 +419,9 @@
            ...chatHistory,
            { role: 'user', content: query },
          ],
@@ -76,7 +78,7 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/server/index.js rep
        }),
      });
  
-@@ -411,11 +429,17 @@
+@@ -411,11 +430,17 @@
      }
  
      const data = await response.json();
@@ -160,7 +162,7 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/src/App.jsx repo/sr
              <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%' }}>
 diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/src/ResearchPage.jsx repo/src/ResearchPage.jsx
 --- repo_orig/src/ResearchPage.jsx	2026-07-07 20:48:49.993923725 +0000
-+++ repo/src/ResearchPage.jsx	2026-07-07 20:58:41.090577251 +0000
++++ repo/src/ResearchPage.jsx	2026-07-07 21:14:20.138746460 +0000
 @@ -6,7 +6,7 @@
    BookMarked, Lightbulb, AlertCircle, ChevronDown, Plus, Trash2, Link,
    Send, MessageSquarePlus, PanelRightOpen, PanelRightClose, Bot, User
@@ -170,7 +172,7 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/src/ResearchPage.js
  
  const API = '/api';
  const HISTORY_KEY = 'mt-chat-history-v2';
-@@ -137,79 +137,25 @@
+@@ -137,79 +137,31 @@
    );
  }
  
@@ -215,17 +217,20 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/src/ResearchPage.js
 -  const normQ = normalizeText(query);
 +/* Usado só para decidir quais cartões de contato mostrar na tela
 +   embaixo da resposta (UI). Não limita o que a IA pode citar — ela
-+   já recebe o diretório e o organograma completos no back-end. */
++   já recebe o diretório e o organograma completos no back-end.
++   Exige o nome CONTÍGUO (nome completo, ou pelo menos primeiro +
++   último nome em sequência) para não pegar coincidências soltas de
++   palavras espalhadas pelo texto — isso é o que causava contatos
++   "aleatórios" aparecendo nos cartões. */
 +function extractMentionedContacts(answerText, contacts) {
 +  if (!answerText) return [];
 +  const normAnswer = normalizeText(answerText);
    return contacts.filter(c => {
      if (!c.nome) return false;
-     const parts = normalizeText(c.nome).split(/\s+/).filter(p => p.length > 2);
-     if (parts.length === 0) return false;
+-    const parts = normalizeText(c.nome).split(/\s+/).filter(p => p.length > 2);
+-    if (parts.length === 0) return false;
 -    const matchCount = parts.filter(p => normQ.includes(p)).length;
-+    const matchCount = parts.filter(p => normAnswer.includes(p)).length;
-     return parts.length === 1 ? matchCount === 1 : matchCount >= 2;
+-    return parts.length === 1 ? matchCount === 1 : matchCount >= 2;
 -  });
 -}
 -
@@ -254,11 +259,17 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/src/ResearchPage.js
 -  byDept.forEach(c => { if (!merged.some(m => m.id === c.id)) merged.push(c); });
 -
 -  return merged.slice(0, 12);
++    const words = normalizeText(c.nome).split(/\s+/).filter(Boolean);
++    if (words.length === 0) return false;
++    const fullName = words.join(' ');
++    const shortName = words.length > 2 ? `${words[0]} ${words[words.length - 1]}` : fullName;
++    return (fullName.length > 4 && normAnswer.includes(fullName)) ||
++           (shortName.length > 4 && normAnswer.includes(shortName));
 +  }).slice(0, 12);
  }
  
  function loadHistory() {
-@@ -266,8 +212,6 @@
+@@ -266,8 +218,6 @@
      }
    }, [input]);
  
@@ -267,7 +278,7 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/src/ResearchPage.js
    const sendMessage = useCallback(async (text) => {
      const q = text.trim();
      if (!q || loading) return;
-@@ -278,8 +222,6 @@
+@@ -278,8 +228,6 @@
      setInput('');
      setLoading(true);
  
@@ -276,7 +287,7 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/src/ResearchPage.js
      try {
        const activeCustomSources = customSources.filter(s => selectedSources.has(s.id));
        const enrichedSources = await Promise.all(activeCustomSources.map(async (s) => {
-@@ -309,7 +251,8 @@
+@@ -309,7 +257,8 @@
          body: JSON.stringify({
            query: q,
            sources: enrichedSources,
@@ -286,7 +297,7 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/src/ResearchPage.js
            history,
          }),
        });
-@@ -321,7 +264,7 @@
+@@ -321,7 +270,7 @@
          id: Date.now() + 1,
          role: 'assistant',
          content: data.answer,
@@ -295,7 +306,7 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/src/ResearchPage.js
          sourcesUsed: selectedSources.size,
        };
        setMessages(prev => [...prev, assistantMsg]);
-@@ -331,7 +274,7 @@
+@@ -331,7 +280,7 @@
      } finally {
        setLoading(false);
      }
@@ -304,7 +315,7 @@ diff -ru '--exclude=.git' '--exclude=node_modules' repo_orig/src/ResearchPage.js
  
    const handleSubmit = (e) => { e?.preventDefault(); sendMessage(input); };
    const handleCat = (cat) => { sendMessage(cat.query); };
-@@ -417,8 +360,7 @@
+@@ -417,8 +366,7 @@
                  <div className="chat-welcome-icon"><Sparkles size={26} /></div>
                  <h1 className="chat-welcome-title">Como posso ajudar hoje?</h1>
                  <p className="chat-welcome-sub">

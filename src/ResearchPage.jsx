@@ -145,16 +145,22 @@ function normalizeText(s) {
 
 /* Usado só para decidir quais cartões de contato mostrar na tela
    embaixo da resposta (UI). Não limita o que a IA pode citar — ela
-   já recebe o diretório e o organograma completos no back-end. */
+   já recebe o diretório e o organograma completos no back-end.
+   Exige o nome CONTÍGUO (nome completo, ou pelo menos primeiro +
+   último nome em sequência) para não pegar coincidências soltas de
+   palavras espalhadas pelo texto — isso é o que causava contatos
+   "aleatórios" aparecendo nos cartões. */
 function extractMentionedContacts(answerText, contacts) {
   if (!answerText) return [];
   const normAnswer = normalizeText(answerText);
   return contacts.filter(c => {
     if (!c.nome) return false;
-    const parts = normalizeText(c.nome).split(/\s+/).filter(p => p.length > 2);
-    if (parts.length === 0) return false;
-    const matchCount = parts.filter(p => normAnswer.includes(p)).length;
-    return parts.length === 1 ? matchCount === 1 : matchCount >= 2;
+    const words = normalizeText(c.nome).split(/\s+/).filter(Boolean);
+    if (words.length === 0) return false;
+    const fullName = words.join(' ');
+    const shortName = words.length > 2 ? `${words[0]} ${words[words.length - 1]}` : fullName;
+    return (fullName.length > 4 && normAnswer.includes(fullName)) ||
+           (shortName.length > 4 && normAnswer.includes(shortName));
   }).slice(0, 12);
 }
 
