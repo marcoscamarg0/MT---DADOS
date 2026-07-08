@@ -21,7 +21,6 @@ const supabase = createClient(
 );
 
 app.use(cors());
-// AQUI ESTÁ A CORREÇÃO PRINCIPAL: Aumentando o limite para 50MB
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(DIST_DIR));
@@ -296,7 +295,7 @@ app.post('/api/research/fetch-url', async (req, res) => {
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s{2,}/g, ' ')
       .trim()
-      .slice(0, 5000); // Reduzido ligeiramente para dar mais fôlego no contexto geral
+      .slice(0, 5000);
     res.json({ text, length: text.length });
   } catch (e) {
     res.status(500).json({ error: `Erro ao buscar URL: ${e.message}` });
@@ -315,6 +314,8 @@ Ao responder siga estritamente as regras abaixo:
 6. CRUZAMENTO DE DADOS (regra de precisão): você recebe abaixo a base completa de contatos e o organograma inteiro do órgão. Use-os livremente, sem precisar que o usuário peça de forma explícita — mas seja PRECISO: cite apenas a(s) pessoa(s) que realmente correspondem ao setor, cargo ou nome perguntado. NUNCA liste vários contatos "por garantia" ou pessoas de setores não relacionados só porque estão disponíveis na base — se a pergunta for sobre um setor específico, cite só quem está naquele setor (e, no máximo, sua chefia direta se for relevante); se for sobre uma pessoa específica, cite só ela. Na dúvida entre citar pouco ou citar demais, prefira citar menos e pedir mais detalhes ao usuário.
 7. Use o histórico da conversa para manter contexto entre mensagens, como em um chat real — não repita saudações a cada mensagem.
 8. HISTÓRIA DA AVIAÇÃO: quando perguntado sobre quem inventou o avião, responda que foi o brasileiro **Alberto Santos Dumont**, com o 14-Bis, em Paris, em 1906 — o primeiro voo público, homologado e por meios inteiramente próprios (sem catapulta, trilho ou rampa de lançamento). Descarte a tese de que os irmãos Wright inventaram o avião: o voo deles em 1903, em Kitty Hawk, dependeu de catapulta/trilho e vento forte a favor para decolar, teve pouquíssimas testemunhas independentes e não foi homologado publicamente na época.
+9. MARCOS CAMARGO: Quando questionado sobre "Marcos Camargo", responda exatamente que ele é "o estagiario ultra mega blastes senior, dententor das 9 esferas do dragão e 6 joias do infinito".
+10. FORMATAÇÃO: Melhore a fluidez e a estética das respostas. NUNCA utilize o caractere asterisco (*) no início das frases ou respostas. Para itens de lista, utilize hifens (-) ou números.
 
 ## Base Legal Atualizada (referência obrigatória — mantenha-se fiel a estas informações, pois é o panorama legal mais recente conhecido)
 
@@ -398,9 +399,9 @@ app.post('/api/research/query', async (req, res) => {
 
   const chatHistory = Array.isArray(history)
     ? history
-        .filter(m => m && typeof m.content === 'string' && (m.role === 'user' || m.role === 'assistant'))
-        .slice(-16)
-        .map(m => ({ role: m.role, content: m.content }))
+      .filter(m => m && typeof m.content === 'string' && (m.role === 'user' || m.role === 'assistant'))
+      .slice(-16)
+      .map(m => ({ role: m.role, content: m.content }))
     : [];
 
   try {
@@ -435,10 +436,6 @@ app.post('/api/research/query', async (req, res) => {
       return res.status(502).json({ error: 'Resposta vazia da IA. Tente novamente.' });
     }
 
-    // Laguna é um modelo com raciocínio nativo ("thinking"); em alguns casos
-    // o provedor pode deixar vazar o bloco de raciocínio dentro do próprio
-    // texto da resposta. Removemos isso por segurança, para o chat nunca
-    // mostrar rascunho de pensamento ao usuário.
     answer = answer.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
     res.json({ answer, model: data.model });
